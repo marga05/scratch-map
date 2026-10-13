@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Scratch Map</title>
+  <meta name="description" content="Your personal travel scratch map: GPS routes, visited places and backups — all on your phone.">
+  <meta name="theme-color" content="#14213d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Scratch Map">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="vendor/maplibre/maplibre-gl.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="map" aria-label="Map"></div>
+
+  <!-- Top: reminder banner -->
+  <div id="banner" class="banner" hidden>
+    <div id="banner-text"></div>
+    <div class="banner-actions">
+      <button id="banner-go" class="btn small primary">Back up now</button>
+      <button id="banner-close" class="btn small ghost" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+
+  <!-- Top-left: status chip -->
+  <div id="status" class="status-chip">Loading…</div>
+
+  <!-- Bottom toolbar -->
+  <nav class="toolbar" aria-label="Main">
+    <button data-sheet="layers"><span class="ico">◧</span>Layers</button>
+    <button data-sheet="dates"><span class="ico">▦</span>Dates</button>
+    <button data-sheet="import"><span class="ico">⤓</span>Import</button>
+    <button data-sheet="backup"><span class="ico">⛨</span>Backup</button>
+    <button data-sheet="settings"><span class="ico">⚙</span>Settings</button>
+  </nav>
+
+  <!-- Bottom sheets (one shows at a time) -->
+  <div id="scrim" class="scrim" hidden></div>
+
+  <section class="sheet" id="sheet-layers" hidden>
+    <header><h2>Layers</h2><button class="close" aria-label="Close">✕</button></header>
+    <label class="row toggle"><span>Routes (lines)</span><input type="checkbox" id="lyr-routes" checked></label>
+    <label class="row toggle"><span>GPS points <small>(shown when zoomed in)</small></span><input type="checkbox" id="lyr-points" checked></label>
+    <label class="row toggle disabled"><span>Flights <small>(coming soon)</small></span><input type="checkbox" disabled></label>
+    <h3>Map style</h3>
+    <div class="segmented" id="style-seg">
+      <button data-style="normal">Normal</button>
+      <button data-style="minimal">Minimal</button>
+    </div>
+    <h3>Scratch-map level</h3>
+    <div class="segmented disabled">
+      <button disabled>Countries</button><button disabled>Regions</button><button disabled>Provinces</button>
+    </div>
+    <p class="hint">Scratch-map colouring comes in the next build step.</p>
+  </section>
+
+  <section class="sheet" id="sheet-dates" hidden>
+    <header><h2>Show dates</h2><button class="close" aria-label="Close">✕</button></header>
+    <div class="chips" id="date-presets">
+      <button data-preset="all">All time</button>
+      <button data-preset="year">This year</button>
+      <button data-preset="lastyear">Last year</button>
+      <button data-preset="30">Last 30 days</button>
+    </div>
+    <div class="row two">
+      <label>From<input type="date" id="date-from"></label>
+      <label>To<input type="date" id="date-to"></label>
+    </div>
+    <button class="btn primary wide" id="date-apply">Show this range</button>
+    <p class="hint" id="date-summary"></p>
+  </section>
+
+  <section class="sheet" id="sheet-import" hidden>
+    <header><h2>Import GPS data</h2><button class="close" aria-label="Close">✕</button></header>
+    <p>In <b>Scoria</b>, use <b>Export database</b>, save the <code>.sqlite</code> file to Files, then pick it here. Old points are recognised and skipped, so importing the same history twice is safe.</p>
+    <label class="btn primary wide file-btn">Choose Scoria file…<input type="file" id="import-file" multiple hidden></label>
+    <div id="import-progress" class="hint" hidden></div>
+    <div id="import-result"></div>
+    <h3>Import history</h3>
+    <ul id="import-log" class="log"></ul>
+  </section>
+
+  <section class="sheet" id="sheet-backup" hidden>
+    <header><h2>Backup</h2><button class="close" aria-label="Close">✕</button></header>
+    <p class="hint" id="backup-status"></p>
+    <ol class="steps">
+      <li>Tap <b>Prepare backup</b>. It packs everything into one file.</li>
+      <li>Tap <b>Save / share</b> → choose <b>Save to Files</b> → <b>iCloud Drive</b> (or AirDrop to your laptop).</li>
+    </ol>
+    <button class="btn primary wide" id="backup-prepare">Prepare backup</button>
+    <button class="btn primary wide" id="backup-share" hidden>Save / share backup file</button>
+    <p class="hint">Also keep the raw Scoria <code>.sqlite</code> in iCloud Drive or on your laptop — it's your master copy.</p>
+
+    <h3>Monthly reminder</h3>
+    <p>Adds a repeating event (1st of every month) to your calendar with the export-and-backup checklist.</p>
+    <button class="btn wide" id="ics-download">Add monthly reminder to calendar</button>
+
+    <h3>Restore</h3>
+    <p>New phone, or Safari data cleared? Pick a backup file. <b>This replaces everything currently in the app.</b></p>
+    <label class="btn wide file-btn danger-outline">Restore from backup…<input type="file" id="restore-file" hidden></label>
+    <div id="restore-result"></div>
+  </section>
+
+  <section class="sheet" id="sheet-settings" hidden>
+    <header><h2>Settings</h2><button class="close" aria-label="Close">✕</button></header>
+    <form id="settings-form">
+      <label class="row field"><span>Ignore GPS points less accurate than<small>metres</small></span><input type="number" name="maxAccuracy" min="5" max="5000" step="5"></label>
+      <label class="row field"><span>Break route line after a tracking gap of<small>minutes</small></span><input type="number" name="gapMinutes" min="1" max="1440"></label>
+      <label class="row field"><span>…if you moved more than<small>km during the gap</small></span><input type="number" name="gapKm" min="0" max="1000" step="0.5"></label>
+      <label class="row field"><span>Faster than this can't be by ground<small>km/h — line is broken</small></span><input type="number" name="maxGroundKmh" min="100" max="2000" step="10"></label>
+      <label class="row field"><span>Remind me to import/back up after<small>days</small></span><input type="number" name="reminderDays" min="1" max="365"></label>
+      <button class="btn primary wide" type="submit">Save settings</button>
+    </form>
+    <p class="hint" id="storage-info"></p>
+    <h3>Danger zone</h3>
+    <button class="btn wide danger" id="wipe">Delete all data in this app…</button>
+  </section>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
