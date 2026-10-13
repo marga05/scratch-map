@@ -56,20 +56,20 @@ The full wish list is in [scratch-map-brief.md](scratch-map-brief.md).
 2. Open <http://localhost:8765> in a browser.
 3. Tap **Import** and pick `test-data/fake-scoria.sqlite`. It's a fake trip: Madrid → train → Barcelona → flight → Berlin → car → Prague.
 
-## Put it online for free (GitHub Pages), one time only
+## Where it lives online
 
-An iPhone only installs a web app from a secure (`https://`) address. GitHub Pages provides one for free.
-The code becomes visible on GitHub, **but your travel data does not**: it never leaves your phone.
+- **App:** <https://marga05.github.io/scratch-map/> (works on iPhone and in any laptop browser)
+- **Code:** <https://github.com/marga05/scratch-map> (public; your travel data is *not* in it, it only lives on your devices)
 
-1. Create a free account at <https://github.com>.
-2. Click **+ → New repository**, name it e.g. `scratch-map`, choose **Public**, then click **Create**.
-3. Ask Claude to "push the scratch map to my GitHub repo `<your-username>/scratch-map`". Claude won't do this unless you ask.
-4. On GitHub, go to the repo → **Settings → Pages** → *Source: Deploy from a branch* → branch **main**, folder **/ (root)** → **Save**.
-5. After a minute or two the app is live at `https://<your-username>.github.io/scratch-map/`.
+To publish a change: commit it, then run `git push`. GitHub Pages updates the site within a minute or two,
+and the app picks up the new version the next time you open it online.
+
+Note: the phone and the laptop each keep **their own** copy of your data. Move data between them with
+**Backup** on one device and **Restore** on the other.
 
 ## Install on your iPhone
 
-1. Open that address in **Safari**.
+1. Open <https://marga05.github.io/scratch-map/> in **Safari**.
 2. Tap the **Share** button → **Add to Home Screen** → **Add**.
 3. Always open it from the home-screen icon. The home-screen app has its own storage, separate from Safari tabs.
 
