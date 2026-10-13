@@ -73,18 +73,9 @@ export async function importScoriaFile(file, settings) {
       if (sim === 1) { simulated++; continue; }
       if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) { invalid++; continue; }
       if (acc != null && acc > settings.maxAccuracy) { badAccuracy++; continue; }
-      kept.push({
-        t,
-        lat: Math.round(lat * 1e6) / 1e6,
-        lon: Math.round(lon * 1e6) / 1e6,
-        acc: acc == null ? null : Math.round(acc),
-        spd: spd == null || spd < 0 ? null : Math.round(spd * 10) / 10,
-        alt: alt == null ? null : Math.round(alt),
-      });
+      kept.push(cleanPoint(t, lat, lon, acc, spd, alt));
     }
     stmt.free();
-
-    const { added, newDays } = await mergePoints(kept);
 
     // Saved places ("pins") from Scoria, if any — skip ones we already have.
     let pinsAdded = 0;
@@ -98,25 +89,46 @@ export async function importScoriaFile(file, settings) {
       }
     }
 
-    const summary = {
-      fileName: file.name,
-      importedAt: Date.now(),
-      pointsInFile: total,
-      kept: kept.length,
-      newPoints: added,
-      alreadyHad: kept.length - added,
-      skippedAccuracy: badAccuracy,
-      skippedSimulated: simulated,
-      skippedInvalid: invalid,
-      fileFirstT: fileFirst,
-      fileLastT: fileLast,
-      newDays: newDays.length,
-      pinsAdded,
-    };
-    await add('imports', summary);
-    await setMeta('lastImportAt', summary.importedAt);
-    return summary;
+    return saveImported(file.name, 'Scoria', kept, {
+      pointsInFile: total, skippedAccuracy: badAccuracy, skippedSimulated: simulated,
+      skippedInvalid: invalid, fileFirstT: fileFirst, fileLastT: fileLast, pinsAdded,
+    });
   } finally {
     db.close();
   }
+}
+
+/** Round and tidy one GPS point the same way for every file format. */
+export function cleanPoint(t, lat, lon, acc = null, spd = null, alt = null) {
+  return {
+    t: Math.round(t),
+    lat: Math.round(lat * 1e6) / 1e6,
+    lon: Math.round(lon * 1e6) / 1e6,
+    acc: acc == null || !Number.isFinite(acc) ? null : Math.round(acc),
+    spd: spd == null || !Number.isFinite(spd) || spd < 0 ? null : Math.round(spd * 10) / 10,
+    alt: alt == null || !Number.isFinite(alt) ? null : Math.round(alt),
+  };
+}
+
+/** Merge the points into your history (skipping ones you already have) and log the import. */
+export async function saveImported(fileName, format, kept, info) {
+  const { added, newDays } = await mergePoints(kept);
+  const summary = {
+    fileName,
+    format,
+    importedAt: Date.now(),
+    kept: kept.length,
+    newPoints: added,
+    alreadyHad: kept.length - added,
+    newDays: newDays.length,
+    skippedAccuracy: 0,
+    skippedSimulated: 0,
+    skippedInvalid: 0,
+    skippedNoTime: 0,
+    pinsAdded: 0,
+    ...info,
+  };
+  await add('imports', summary);
+  await setMeta('lastImportAt', summary.importedAt);
+  return summary;
 }

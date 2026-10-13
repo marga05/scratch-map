@@ -19,6 +19,7 @@ const APP_FILES = [
   'js/app.js',
   'js/db.js',
   'js/importer.js',
+  'js/import-text.js',
   'js/tracks.js',
   'js/mapview.js',
   'js/backup.js',

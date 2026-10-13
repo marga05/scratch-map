@@ -2,6 +2,7 @@
 
 import { getMeta, setMeta, getChunks, getPointStats, getAll, add, del, requestPersistence, clearStores, STORES, dayKey } from './db.js';
 import { importScoriaFile } from './importer.js';
+import { importTextFile, NeedsColumnMapping } from './import-text.js';
 import { buildTracks } from './tracks.js';
 import { MapView } from './mapview.js';
 import { buildBackupFile, shareOrDownload, markBackedUp, readBackupFile, restoreBackup } from './backup.js';
@@ -504,7 +505,15 @@ async function checkReminders() {
 
 // ---------- import ----------
 
-async function handleImport(files) {
+/** Scoria .sqlite, or GPX / GeoJSON / CSV — decided by looking at the file's first bytes. */
+async function importAnyFile(file, csvMapping) {
+  const head = new TextDecoder().decode(new Uint8Array(await file.slice(0, 15).arrayBuffer()));
+  return head === 'SQLite format 3'
+    ? importScoriaFile(file, state.settings)
+    : importTextFile(file, state.settings, csvMapping);
+}
+
+async function handleImport(files, csvMapping = null) {
   const prog = $('#import-progress');
   const out = $('#import-result');
   out.innerHTML = '';
@@ -512,14 +521,17 @@ async function handleImport(files) {
     prog.hidden = false;
     prog.textContent = `Reading ${file.name}…`;
     try {
-      const s = await importScoriaFile(file, state.settings);
+      const s = await importAnyFile(file, csvMapping);
       prog.textContent = 'Finding countries and regions…';
       const fresh = await refreshPlaces();
-      const newNames = (lvl) => fresh.filter((k) => k.startsWith(`${lvl}:`)).map((k) => state.places.get(k).name);
+      const newNames = (lvl) => fresh.filter((k) => k.startsWith(`${lvl}:`)).map((k) => {
+        const p = state.places.get(k);
+        return p.status === 'passed' ? `${p.name} (passed through)` : p.name;
+      });
       const nc = newNames(0), nr = newNames(1);
       out.insertAdjacentHTML('beforeend', `
         <div class="result ok">
-          <b>${esc(s.fileName)}</b>
+          <b>${esc(s.fileName)}</b> <span class="hint">· ${esc(s.format ?? 'Scoria')}</span>
           <dl>
             <dt>Points in file</dt><dd>${fmtNum(s.pointsInFile)}</dd>
             <dt>File covers</dt><dd>${fmtDate(s.fileFirstT)} – ${fmtDate(s.fileLastT)}</dd>
@@ -528,6 +540,7 @@ async function handleImport(files) {
             <dt>Skipped (inaccurate > ${state.settings.maxAccuracy} m)</dt><dd>${fmtNum(s.skippedAccuracy)}</dd>
             ${s.skippedSimulated ? `<dt>Skipped (simulated)</dt><dd>${fmtNum(s.skippedSimulated)}</dd>` : ''}
             ${s.skippedInvalid ? `<dt>Skipped (broken)</dt><dd>${fmtNum(s.skippedInvalid)}</dd>` : ''}
+            ${s.skippedNoTime ? `<dt>Skipped (no time)</dt><dd>${fmtNum(s.skippedNoTime)}</dd>` : ''}
             <dt>New days with data</dt><dd>${fmtNum(s.newDays)}</dd>
             ${s.pinsAdded ? `<dt>Saved places added</dt><dd>${fmtNum(s.pinsAdded)}</dd>` : ''}
           </dl>
@@ -535,6 +548,7 @@ async function handleImport(files) {
           ${nr.length ? `<p><b>New regions:</b> ${esc(nr.join(', '))}</p>` : ''}
         </div>`);
     } catch (e) {
+      if (e instanceof NeedsColumnMapping) { showColumnPicker(file, e); continue; }
       console.error(e);
       out.insertAdjacentHTML('beforeend', `<div class="result err"><b>${esc(file.name)}</b><br>${esc(e.message)}</div>`);
     }
@@ -545,6 +559,30 @@ async function handleImport(files) {
   renderImportLog();
   sessionStorage.removeItem('bannerDismissed');
   checkReminders();
+}
+
+/** A CSV whose columns we couldn't recognise: let you pick them. */
+function showColumnPicker(file, err) {
+  const opts = err.headers.map((h, i) => `<option value="${i}">${esc(h || `Column ${i + 1}`)}</option>`).join('');
+  const box = document.createElement('div');
+  box.className = 'result';
+  box.innerHTML = `<b>${esc(file.name)}</b>
+    <p>Which columns hold the position and time? First rows:</p>
+    <div style="overflow-x:auto"><table class="sample">${[err.headers, ...err.sample].map((r, ri) =>
+      `<tr>${r.map((c) => `<${ri ? 'td' : 'th'}>${esc(c)}</${ri ? 'td' : 'th'}>`).join('')}</tr>`).join('')}</table></div>
+    ${['Latitude', 'Longitude', 'Time'].map((label) =>
+      `<label class="row field"><span>${label}</span><select data-col="${label.toLowerCase().slice(0, 3)}">${opts}</select></label>`).join('')}
+    <button class="btn primary wide">Import with these columns</button>`;
+  const guess = { lat: /lat/i, lon: /lon|lng/i, tim: /time|date/i };
+  box.querySelectorAll('select').forEach((sel) => {
+    const i = err.headers.findIndex((h) => guess[sel.dataset.col].test(h));
+    if (i >= 0) sel.value = String(i);
+  });
+  box.querySelector('button').onclick = () => {
+    const v = (k) => Number(box.querySelector(`[data-col="${k}"]`).value);
+    handleImport([file], { lat: v('lat'), lon: v('lon'), time: v('tim'), date: null, clock: null, arrival: null, departure: null });
+  };
+  $('#import-result').appendChild(box);
 }
 
 async function renderImportLog() {

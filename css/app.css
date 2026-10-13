@@ -243,3 +243,7 @@ input[type=datetime-local] { width: 100%; min-height: 44px; font: inherit; font-
 .legend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
 .maplibregl-popup-content { font: 14px/1.4 -apple-system, system-ui, sans-serif; color: #14213d; padding: 12px 14px; border-radius: 12px; }
 .maplibregl-popup-content .btn { min-height: 36px; font-size: 13px; padding: 0 10px; margin-top: 6px; }
+
+.sample { border-collapse: collapse; font-size: 12px; margin: 6px 0; }
+.sample th, .sample td { border: 1px solid var(--line); padding: 3px 6px; white-space: nowrap; text-align: left; }
+.row.field select { font: inherit; font-size: 16px; max-width: 55%; padding: 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }

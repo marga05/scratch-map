@@ -142,7 +142,8 @@
     <header><h2>Import &amp; backup</h2><button class="close" aria-label="Close">✕</button></header>
     <h3>Import GPS data</h3>
     <p>In <b>Scoria</b>, use <b>Export database</b>, save the <code>.sqlite</code> file to Files, then pick it here. Old points are recognised and skipped, so importing the same history twice is safe.</p>
-    <label class="btn primary wide file-btn">Choose Scoria file…<input type="file" id="import-file" multiple hidden></label>
+    <label class="btn primary wide file-btn">Choose file…<input type="file" id="import-file" multiple hidden></label>
+    <p class="hint">Also works with <b>GPX</b>, <b>GeoJSON</b> and <b>CSV</b> exports (e.g. Location Path, Whereabout).</p>
     <div id="import-progress" class="hint" hidden></div>
     <div id="import-result"></div>
     <details><summary class="hint">Import history</summary><ul id="import-log" class="log"></ul></details>
