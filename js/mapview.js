@@ -36,7 +36,7 @@ export class MapView {
       style: MAP_STYLES[style]?.url ?? MAP_STYLES.normal.url,
       center: [10, 45],
       zoom: 2.5,
-      attributionControl: { compact: true },
+      attributionControl: { compact: true, customAttribution: 'Borders: Natural Earth, geoBoundaries' },
     });
     this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     this.map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: false }), 'top-right');
@@ -165,7 +165,12 @@ export class MapView {
     }
   }
 
-  /** places: Map "level:id" → place (with .status and .source) */
+  /** More level-2 areas were loaded (a newly visited country): redraw that layer. */
+  refreshLevel2() {
+    this.map.getSource('admin2')?.setData(this.boundaries.admin2);
+  }
+
+    /** places: Map "level:id" → place (with .status and .source) */
   setPlaceStates(places) {
     this.placeStates = places;
     // Areas known only from your manual entries get diagonal stripes.

@@ -9,7 +9,7 @@ import { buildBackupFile, shareOrDownload, markBackedUp, readBackupFile, restore
 import { dueReminders, buildMonthlyIcs } from './reminders.js';
 import {
   loadBoundaries, updateVisits, countAreas, stays, bbox, searchPlaces, describe,
-  countryArea, worldLandKm2, continentOf, whereIs,
+  countryArea, worldLandKm2, continentOf, whereIs, ensureLevel2,
 } from './places.js';
 import {
   loadAirports, searchAirports, airportLabel, airportSnapshot, flightsGeoJSON, flightKm, detectFlights,
@@ -146,9 +146,15 @@ async function refreshPlaces() {
   const before = new Set([...state.places].filter(([, p]) => shows(p)).map(([k]) => k));
   const [manual, corrections] = await Promise.all([getAll(STORES.manualPlaces), getAll(STORES.corrections)]);
   state.edits = { manual, corrections };
-  state.places = await updateVisits(state.settings, state.edits, state.range, (done, total) => {
+  const progress = (done, total) => {
     $('#status').textContent = `Finding places… ${Math.round((done / total) * 100)}%`;
-  });
+  };
+  state.places = await updateVisits(state.settings, state.edits, state.range, progress);
+  // Load counties / districts for countries you've been to, then look again.
+  if (await ensureLevel2(placesOf(0).map((p) => p.id))) {
+    mapView.refreshLevel2();
+    state.places = await updateVisits(state.settings, state.edits, state.range, progress);
+  }
   mapView.setPlaceStates(state.places);
   renderStatus();
   return [...state.places].filter(([k, p]) => shows(p) && !before.has(k)).map(([k]) => k);
@@ -734,7 +740,7 @@ function renderLayersSheet() {
   $('#level-hint').textContent = [
     'Whole countries.',
     'States, comunidades, Bundesländer, régions, regioni… for every country.',
-    'For now only where the border data has them: Spain (provincias), France (départements), Italy (province), UK (councils), and a few more. More countries come in a later step.',
+    'Provincias, départements, Landkreise, counties… Loaded for each country once you have been there.',
   ][state.settings.mapLevel];
 }
 

@@ -1,0 +1,1150 @@
+{
+"AFG": {
+"level": "ADM2",
+"units": 398,
+"kb": 971,
+"type": "wuleswali",
+"license": "Public Domain"
+},
+"AGO": {
+"level": "ADM2",
+"units": 158,
+"kb": 867,
+"type": "Municipality",
+"license": "Public Domain"
+},
+"ALB": {
+"level": "ADM2",
+"units": 37,
+"kb": 38,
+"type": "rrethe",
+"license": "Creative Commons Attribution 2.5 Generic"
+},
+"ARG": {
+"level": "ADM2",
+"units": 525,
+"kb": 590,
+"type": "departments",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"ARM": {
+"level": "ADM2",
+"units": 39,
+"kb": 73,
+"type": "Municipal Communities",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"ASM": {
+"level": "ADM3",
+"units": 16,
+"kb": 8,
+"type": "County",
+"license": "Public Domain"
+},
+"AUS": {
+"level": "ADM2",
+"units": 547,
+"kb": 903,
+"type": "Local Government Areas",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"AUT": {
+"level": "ADM2",
+"units": 94,
+"kb": 295,
+"type": "Unknown",
+"license": "Creative Commons Attribution-ShareAlike 2.0"
+},
+"BDI": {
+"level": "ADM2",
+"units": 119,
+"kb": 162,
+"type": "Unknown",
+"license": "Public Domain"
+},
+"BEL": {
+"level": "ADM3",
+"units": 43,
+"kb": 118,
+"type": "Arrondissements",
+"license": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+},
+"BEN": {
+"level": "ADM2",
+"units": 77,
+"kb": 95,
+"type": "Commune",
+"license": "Public Domain"
+},
+"BFA": {
+"level": "ADM3",
+"units": 351,
+"kb": 540,
+"type": "Unknown",
+"license": "Public Domain"
+},
+"BGD": {
+"level": "ADM2",
+"units": 64,
+"kb": 397,
+"type": "district",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"BGR": {
+"level": "ADM2",
+"units": 265,
+"kb": 296,
+"type": "Municipality",
+"license": "Public Domain"
+},
+"BIH": {
+"level": "ADM3",
+"units": 142,
+"kb": 198,
+"type": "gbOpen",
+"license": "Public Domain"
+},
+"BLR": {
+"level": "ADM2",
+"units": 118,
+"kb": 402,
+"type": "Raion",
+"license": "Creative Commons Attribution 3.0 License"
+},
+"BLZ": {
+"level": "ADM2",
+"units": 31,
+"kb": 58,
+"type": "Constituencies",
+"license": "Public Domain"
+},
+"BOL": {
+"level": "ADM2",
+"units": 110,
+"kb": 801,
+"type": "Unknown",
+"license": "Public Domain"
+},
+"BRA": {
+"level": "ADM2",
+"units": 5569,
+"kb": 1660,
+"type": "municipality",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"BRN": {
+"level": "ADM2",
+"units": 38,
+"kb": 22,
+"type": "Mukim",
+"license": "Public Domain"
+},
+"BTN": {
+"level": "ADM2",
+"units": 205,
+"kb": 235,
+"type": "Gewog",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"BWA": {
+"level": "ADM2",
+"units": 25,
+"kb": 71,
+"type": "Unknown",
+"license": "Public Domain"
+},
+"CAF": {
+"level": "ADM2",
+"units": 72,
+"kb": 218,
+"type": "Sub-Prefectures",
+"license": "Creative Commons Attribution 3.0 License"
+},
+"CAN": {
+"level": "ADM2",
+"units": 76,
+"kb": 1029,
+"type": "Divisions",
+"license": "Open Government Canada 2.0"
+},
+"CHE": {
+"level": "ADM2",
+"units": 169,
+"kb": 237,
+"type": "District",
+"license": "Federal Office of Topography swisstopo License"
+},
+"CHL": {
+"level": "ADM2",
+"units": 56,
+"kb": 346,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"CHN": {
+"level": "ADM2",
+"units": 2391,
+"kb": 860,
+"type": "County Level",
+"license": "Open Data Commons Public Domain Dedication and License (PDDL) v1.0"
+},
+"CIV": {
+"level": "ADM2",
+"units": 33,
+"kb": 232,
+"type": "régions de Côte d'Ivoire",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"CMR": {
+"level": "ADM2",
+"units": 60,
+"kb": 130,
+"type": "department",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"COD": {
+"level": "ADM2",
+"units": 189,
+"kb": 1134,
+"type": "territory, city",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"COG": {
+"level": "ADM2",
+"units": 46,
+"kb": 130,
+"type": "Unknown",
+"license": "Public Domain"
+},
+"COL": {
+"level": "ADM2",
+"units": 1122,
+"kb": 880,
+"type": "Unknown",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"COM": {
+"level": "ADM2",
+"units": 17,
+"kb": 15,
+"type": "Prefecture",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"CRI": {
+"level": "ADM2",
+"units": 83,
+"kb": 177,
+"type": "Cantons",
+"license": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+},
+"CUB": {
+"level": "ADM2",
+"units": 168,
+"kb": 371,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"CYP": {
+"level": "ADM2",
+"units": 610,
+"kb": 297,
+"type": "Unknown",
+"license": "Creative Commons Attribution-ShareAlike 3.0 Unported"
+},
+"CZE": {
+"level": "ADM2",
+"units": 77,
+"kb": 271,
+"type": "District",
+"license": "Public Domain"
+},
+"DEU": {
+"level": "ADM3",
+"units": 428,
+"kb": 1286,
+"type": "Independent City or District",
+"license": "Data license Germany - Attribution - Version 2.0"
+},
+"DJI": {
+"level": "ADM2",
+"units": 11,
+"kb": 12,
+"type": "Districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"DNK": {
+"level": "ADM2",
+"units": 98,
+"kb": 154,
+"type": "kommune",
+"license": "Public Domain"
+},
+"DOM": {
+"level": "ADM2",
+"units": 155,
+"kb": 237,
+"type": "Municipalities",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"DZA": {
+"level": "ADM3",
+"units": 1540,
+"kb": 718,
+"type": "Communes",
+"license": "Creative Commons Attribution-ShareAlike 2.0"
+},
+"ECU": {
+"level": "ADM2",
+"units": 224,
+"kb": 745,
+"type": "Cantons",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"EGY": {
+"level": "ADM2",
+"units": 365,
+"kb": 440,
+"type": "marakiz and aqsam",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"ERI": {
+"level": "ADM2",
+"units": 58,
+"kb": 172,
+"type": "districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"EST": {
+"level": "ADM2",
+"units": 214,
+"kb": 291,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"ETH": {
+"level": "ADM2",
+"units": 74,
+"kb": 340,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"FIN": {
+"level": "ADM2",
+"units": 70,
+"kb": 364,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"FJI": {
+"level": "ADM2",
+"units": 15,
+"kb": 93,
+"type": "Provinces",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"FSM": {
+"level": "ADM2",
+"units": 75,
+"kb": 28,
+"type": "Municipality",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"GAB": {
+"level": "ADM2",
+"units": 49,
+"kb": 120,
+"type": "Department",
+"license": "Creative Commons Attribution 3.0 License"
+},
+"GEO": {
+"level": "ADM2",
+"units": 68,
+"kb": 145,
+"type": "Municipality",
+"license": "Public Domain"
+},
+"GHA": {
+"level": "ADM2",
+"units": 260,
+"kb": 600,
+"type": "Districts",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"GIN": {
+"level": "ADM3",
+"units": 340,
+"kb": 386,
+"type": "sub-prefecture",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"GMB": {
+"level": "ADM2",
+"units": 48,
+"kb": 48,
+"type": "District",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"GNB": {
+"level": "ADM2",
+"units": 39,
+"kb": 95,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"GNQ": {
+"level": "ADM2",
+"units": 28,
+"kb": 35,
+"type": "Unknown",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"GRC": {
+"level": "ADM3",
+"units": 326,
+"kb": 469,
+"type": "municipality",
+"license": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+},
+"GTM": {
+"level": "ADM2",
+"units": 342,
+"kb": 396,
+"type": "Municipio",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"GUM": {
+"level": "ADM2",
+"units": 19,
+"kb": 10,
+"type": "Village",
+"license": "Public Domain"
+},
+"GUY": {
+"level": "ADM2",
+"units": 27,
+"kb": 90,
+"type": "Neighbourhood Councils",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"HND": {
+"level": "ADM2",
+"units": 298,
+"kb": 407,
+"type": "Municipalities",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"HRV": {
+"level": "ADM2",
+"units": 560,
+"kb": 543,
+"type": "Municipalities and Towns",
+"license": "Creative Commons Attribution-ShareAlike 2.0"
+},
+"HTI": {
+"level": "ADM2",
+"units": 42,
+"kb": 113,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"HUN": {
+"level": "ADM2",
+"units": 198,
+"kb": 362,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"IDN": {
+"level": "ADM2",
+"units": 519,
+"kb": 876,
+"type": "regency, city",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"IND": {
+"level": "ADM2",
+"units": 735,
+"kb": 624,
+"type": "District",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"IRL": {
+"level": "ADM2",
+"units": 166,
+"kb": 373,
+"type": "Local Electoral Areas",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"IRN": {
+"level": "ADM2",
+"units": 432,
+"kb": 1014,
+"type": "Shahrestan",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"IRQ": {
+"level": "ADM2",
+"units": 101,
+"kb": 185,
+"type": "Districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"ISL": {
+"level": "ADM2",
+"units": 74,
+"kb": 203,
+"type": "Municipalities",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"ISR": {
+"level": "ADM2",
+"units": 15,
+"kb": 38,
+"type": "Subdistrict",
+"license": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+},
+"JAM": {
+"level": "ADM2",
+"units": 827,
+"kb": 396,
+"type": "community",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"JOR": {
+"level": "ADM2",
+"units": 52,
+"kb": 63,
+"type": "Nahias",
+"license": "Public Domain"
+},
+"JPN": {
+"level": "ADM2",
+"units": 1741,
+"kb": 921,
+"type": "Subprefectures",
+"license": "Creative Commons Attribution-ShareAlike 2.0"
+},
+"KAZ": {
+"level": "ADM2",
+"units": 174,
+"kb": 367,
+"type": "District",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"KEN": {
+"level": "ADM2",
+"units": 290,
+"kb": 606,
+"type": "Sub-Counties",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"KGZ": {
+"level": "ADM2",
+"units": 41,
+"kb": 129,
+"type": "Raions",
+"license": "Creative Commons Attribution-ShareAlike 3.0 Unported"
+},
+"KHM": {
+"level": "ADM2",
+"units": 197,
+"kb": 401,
+"type": "Unknown",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"KIR": {
+"level": "ADM2",
+"units": 24,
+"kb": 21,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"KOR": {
+"level": "ADM2",
+"units": 228,
+"kb": 338,
+"type": "Si, Kun (districts and city districts)",
+"license": "Creative Commons Attribution 3.0 License"
+},
+"KWT": {
+"level": "ADM2",
+"units": 137,
+"kb": 53,
+"type": "Areas",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"LAO": {
+"level": "ADM2",
+"units": 148,
+"kb": 418,
+"type": "Districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"LBN": {
+"level": "ADM2",
+"units": 26,
+"kb": 46,
+"type": "Districts (Aqdya)",
+"license": "Public Domain"
+},
+"LBR": {
+"level": "ADM2",
+"units": 136,
+"kb": 220,
+"type": "Districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"LCA": {
+"level": "ADM2",
+"units": 546,
+"kb": 159,
+"type": "Communities",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"LKA": {
+"level": "ADM3",
+"units": 330,
+"kb": 421,
+"type": "Divisional Secretariat",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"LSO": {
+"level": "ADM2",
+"units": 78,
+"kb": 174,
+"type": "constituencies",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"LTU": {
+"level": "ADM2",
+"units": 60,
+"kb": 184,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"LUX": {
+"level": "ADM2",
+"units": 105,
+"kb": 63,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"MAR": {
+"level": "ADM2",
+"units": 75,
+"kb": 277,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"MCO": {
+"level": "ADM2",
+"units": 9,
+"kb": 2,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"MDG": {
+"level": "ADM2",
+"units": 119,
+"kb": 771,
+"type": "districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"MEX": {
+"level": "ADM2",
+"units": 2457,
+"kb": 1034,
+"type": "municipios",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"MLI": {
+"level": "ADM2",
+"units": 50,
+"kb": 195,
+"type": "Cercle",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"MMR": {
+"level": "ADM2",
+"units": 74,
+"kb": 773,
+"type": "District",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"MNG": {
+"level": "ADM2",
+"units": 339,
+"kb": 611,
+"type": "soum, düüregs",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"MOZ": {
+"level": "ADM2",
+"units": 159,
+"kb": 794,
+"type": "districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"MRT": {
+"level": "ADM2",
+"units": 57,
+"kb": 69,
+"type": "Mauritania",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"MWI": {
+"level": "ADM3",
+"units": 245,
+"kb": 344,
+"type": "Traditional Authorities",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"MYS": {
+"level": "ADM2",
+"units": 159,
+"kb": 413,
+"type": "Districts",
+"license": "Creative Commons Attribution 3.0 License"
+},
+"NAM": {
+"level": "ADM2",
+"units": 109,
+"kb": 202,
+"type": "Unknown",
+"license": "Public Domain"
+},
+"NER": {
+"level": "ADM2",
+"units": 67,
+"kb": 82,
+"type": "Department",
+"license": "Creative Commons Attribution 3.0 License"
+},
+"NGA": {
+"level": "ADM2",
+"units": 774,
+"kb": 1269,
+"type": "Local Government Areas",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"NIC": {
+"level": "ADM2",
+"units": 153,
+"kb": 261,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"NLD": {
+"level": "ADM2",
+"units": 344,
+"kb": 258,
+"type": "Municipality",
+"license": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+},
+"NOR": {
+"level": "ADM2",
+"units": 431,
+"kb": 1078,
+"type": "Unknown",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"NPL": {
+"level": "ADM2",
+"units": 75,
+"kb": 67,
+"type": "Districts",
+"license": "Public Domain"
+},
+"NZL": {
+"level": "ADM2",
+"units": 88,
+"kb": 516,
+"type": "Territorial Authorities",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"OMN": {
+"level": "ADM2",
+"units": 61,
+"kb": 144,
+"type": "Wilayaf",
+"license": "Other - Direct Permission"
+},
+"PAK": {
+"level": "ADM2",
+"units": 126,
+"kb": 368,
+"type": "Districts",
+"license": "Public Domain"
+},
+"PAN": {
+"level": "ADM2",
+"units": 76,
+"kb": 279,
+"type": "Unknown",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"PER": {
+"level": "ADM2",
+"units": 196,
+"kb": 1368,
+"type": "Provinces",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"PLW": {
+"level": "ADM2",
+"units": 77,
+"kb": 26,
+"type": "Hamlets",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"PNG": {
+"level": "ADM2",
+"units": 87,
+"kb": 465,
+"type": "District",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"POL": {
+"level": "ADM2",
+"units": 380,
+"kb": 1099,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"PRI": {
+"level": "ADM2",
+"units": 78,
+"kb": 86,
+"type": "Municipality",
+"license": "Public Domain"
+},
+"PRK": {
+"level": "ADM2",
+"units": 179,
+"kb": 274,
+"type": "county, city, special city",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"PRT": {
+"level": "ADM2",
+"units": 311,
+"kb": 160,
+"type": "gbOpen",
+"license": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+},
+"PRY": {
+"level": "ADM2",
+"units": 247,
+"kb": 564,
+"type": "gbOpen",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"QAT": {
+"level": "ADM2",
+"units": 79,
+"kb": 39,
+"type": "Unknown",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"ROU": {
+"level": "ADM2",
+"units": 3234,
+"kb": 1200,
+"type": "municipalities",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"RUS": {
+"level": "ADM2",
+"units": 2327,
+"kb": 940,
+"type": "Raion",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"RWA": {
+"level": "ADM2",
+"units": 30,
+"kb": 74,
+"type": "Unknown",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"SAU": {
+"level": "ADM2",
+"units": 147,
+"kb": 757,
+"type": "Governorate",
+"license": "Creative Commons Attribution-ShareAlike 2.0"
+},
+"SDN": {
+"level": "ADM2",
+"units": 189,
+"kb": 296,
+"type": "District",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"SEN": {
+"level": "ADM2",
+"units": 45,
+"kb": 143,
+"type": "department",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"SGP": {
+"level": "ADM2",
+"units": 55,
+"kb": 25,
+"type": "Divisions",
+"license": "Singapore Open Data License Version 1.0"
+},
+"SLB": {
+"level": "ADM2",
+"units": 50,
+"kb": 149,
+"type": "Constituency",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"SLE": {
+"level": "ADM2",
+"units": 14,
+"kb": 93,
+"type": "Districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"SLV": {
+"level": "ADM2",
+"units": 272,
+"kb": 185,
+"type": "Municipalities",
+"license": "Public Domain"
+},
+"SOM": {
+"level": "ADM2",
+"units": 118,
+"kb": 69,
+"type": "Districts",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"SRB": {
+"level": "ADM2",
+"units": 145,
+"kb": 293,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"STP": {
+"level": "ADM2",
+"units": 7,
+"kb": 7,
+"type": "Districts",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"SUR": {
+"level": "ADM2",
+"units": 59,
+"kb": 96,
+"type": "Ressorten",
+"license": "Public Domain"
+},
+"SVK": {
+"level": "ADM2",
+"units": 79,
+"kb": 199,
+"type": "Okres",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"SWE": {
+"level": "ADM2",
+"units": 290,
+"kb": 387,
+"type": "Municipality",
+"license": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication"
+},
+"SWZ": {
+"level": "ADM2",
+"units": 53,
+"kb": 72,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"SYR": {
+"level": "ADM2",
+"units": 61,
+"kb": 144,
+"type": "District",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"TCD": {
+"level": "ADM2",
+"units": 70,
+"kb": 107,
+"type": "Departments",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"TGO": {
+"level": "ADM2",
+"units": 37,
+"kb": 57,
+"type": "Prefectures",
+"license": "Creative Commons Attribution-ShareAlike 2.0"
+},
+"THA": {
+"level": "ADM2",
+"units": 928,
+"kb": 681,
+"type": "districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"TJK": {
+"level": "ADM2",
+"units": 58,
+"kb": 137,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"TKM": {
+"level": "ADM2",
+"units": 59,
+"kb": 95,
+"type": "Unknown",
+"license": "Creative Commons Attribution-ShareAlike 3.0 Unported"
+},
+"TLS": {
+"level": "ADM2",
+"units": 65,
+"kb": 94,
+"type": "Administrative Posts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"TON": {
+"level": "ADM2",
+"units": 23,
+"kb": 16,
+"type": "district",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"TUN": {
+"level": "ADM2",
+"units": 264,
+"kb": 368,
+"type": "Unknown",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"TUR": {
+"level": "ADM2",
+"units": 973,
+"kb": 736,
+"type": "Districts",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"TUV": {
+"level": "ADM2",
+"units": 34,
+"kb": 8,
+"type": "village",
+"license": "Creative Commons Attribution 4.0 International (CC BY 4.0)"
+},
+"TWN": {
+"level": "ADM2",
+"units": 368,
+"kb": 365,
+"type": "Townships",
+"license": "Creative Commons Attribution-ShareAlike 2.0"
+},
+"TZA": {
+"level": "ADM2",
+"units": 170,
+"kb": 806,
+"type": "Districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"UKR": {
+"level": "ADM2",
+"units": 495,
+"kb": 290,
+"type": "Raions",
+"license": "Public Domain"
+},
+"URY": {
+"level": "ADM2",
+"units": 124,
+"kb": 233,
+"type": "Municipalities",
+"license": "Creative Commons Attribution-ShareAlike 3.0 Unported"
+},
+"USA": {
+"level": "ADM2",
+"units": 3233,
+"kb": 1387,
+"type": "Counties",
+"license": "Public Domain"
+},
+"UZB": {
+"level": "ADM2",
+"units": 199,
+"kb": 283,
+"type": "Tuman",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"VEN": {
+"level": "ADM2",
+"units": 335,
+"kb": 935,
+"type": "Municipios",
+"license": "Open Data Commons Open Database License 1.0"
+},
+"VIR": {
+"level": "ADM3",
+"units": 20,
+"kb": 11,
+"type": "Subdistrict",
+"license": "Public Domain"
+},
+"VNM": {
+"level": "ADM2",
+"units": 708,
+"kb": 1448,
+"type": "District",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"VUT": {
+"level": "ADM2",
+"units": 65,
+"kb": 93,
+"type": "Municipalities",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"WSM": {
+"level": "ADM2",
+"units": 43,
+"kb": 27,
+"type": "Districts",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"YEM": {
+"level": "ADM2",
+"units": 335,
+"kb": 437,
+"type": "Districts",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"ZAF": {
+"level": "ADM2",
+"units": 52,
+"kb": 495,
+"type": "District municipality",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+},
+"ZMB": {
+"level": "ADM2",
+"units": 116,
+"kb": 678,
+"type": "Districts",
+"license": "Creative Commons Attribution 4.0 (CC BY 4.0)"
+},
+"ZWE": {
+"level": "ADM2",
+"units": 91,
+"kb": 336,
+"type": "District",
+"license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)"
+}
+}

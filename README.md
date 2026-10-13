@@ -3,12 +3,13 @@
 A personal travel map for your iPhone. It shows the exact GPS routes you've
 travelled (recorded by the **Scoria** app) and colours every country and region
 you've been to in gold, with how many days you spent there and on which dates.
-Flights and manual places are still to come. It's free, has no server or
-account, and your data stays on your phone except for backups you choose to make.
+It also draws your flights, lets you add and correct places by hand, and tells
+apart places you visited from places you only passed through. It's free, has no
+server or account, and your data stays on your phone except for backups you choose to make.
 
 The full wish list is in [scratch-map-brief.md](scratch-map-brief.md).
 
-## What works so far (build steps 1–6)
+## What it does (build steps 1–10)
 
 - **Installable app (PWA):** add it to your home screen and it opens full-screen, even offline.
 - **Import Scoria `.sqlite` files.** Duplicate points are skipped, so importing the same history twice is safe.
@@ -23,6 +24,25 @@ The full wish list is in [scratch-map-brief.md](scratch-map-brief.md).
 - **Days per place:** tap any area, or use the **Places** list, to see total days, each stay (e.g. "3–8 Aug 2026, 6 days"),
   first and last visit, and the regions inside it. Days are counted in the place's **local time zone**, and a travel day
   counts for every place you were in. The date filter applies to these too.
+- **Visited vs. passed through:** a place counts as *visited* once you've stopped there for 2 hours in total
+  (slower than 15 km/h). Less than that means *passed through*, shown in pale gold and not counted in totals.
+  You can change both in **Settings**.
+- **Flights:** under **Flights**, add a flight by searching two airports (city or code, closed airports like
+  Tegel included) and a date. It's drawn as a dashed curved line. The app also spots flights in your GPS
+  ("Looks like a flight from Barcelona to Berlin…") and offers to add them. Flights never make a place visited.
+- **Manual control:** in any place's panel you can
+  - add a visit by hand (dates optional, with a note). These places show with gold stripes.
+  - set the status yourself (*visited / passed through / not visited*). Your choice always wins, and
+    "Back to automatic" undoes it.
+  - mark a *stretch* of your track (tap a GPS dot → Start/End stretch here) as "passing through" or "flight".
+  All of this is stored separately from the GPS data, so re-importing never undoes it, and it's included in backups.
+- **Search:** find any country, region or province by name under **Places**, even offline.
+- **Provinces/counties everywhere:** level 2 is loaded per country, only for countries you've visited
+  (US counties, German Landkreise, Dutch gemeenten, …).
+- **Other file formats:** GPX, GeoJSON and CSV (e.g. Location Path, Whereabout). For a CSV whose columns
+  aren't recognised, the app asks you which column is which.
+- **Stats:** km on the ground and flown, km per year, continents, % of the world's land, and your
+  furthest north/south/east/west points.
 - **Reminders:** a banner appears when your last import or backup is older than 30 days (adjustable). There's also a button that
   adds a **monthly calendar reminder** (1st of each month) with the checklist.
 
@@ -39,13 +59,18 @@ The full wish list is in [scratch-map-brief.md](scratch-map-brief.md).
 | `js/mapview.js` | The map (MapLibre + free OpenFreeMap tiles) |
 | `js/backup.js` | Backup file: make, share, restore |
 | `js/reminders.js` | Banner logic + calendar (.ics) reminder |
-| `js/places.js` | Works out which countries/regions you visited, and on which local dates |
-| `data/` | Simplified borders from Natural Earth (public domain), with time zones |
+| `js/places.js` | Works out which countries/regions you visited, on which local dates, and for how long you stopped |
+| `js/flights.js` | Airports, curved flight lines, spotting flights in GPS data |
+| `js/import-text.js` | Reads GPX, GeoJSON and CSV files |
+| `data/` | Simplified borders (with time zones), airports, and `adm2/` per-country counties/districts |
 | `sw.js` | Service worker: keeps the app working offline |
 | `vendor/` | Libraries (MapLibre GL 6.14, sql.js 1.14), stored locally so nothing loads from elsewhere |
 | `tools/make_fake_scoria.py` | Makes fake test data → `test-data/fake-scoria.sqlite` |
 | `tools/make_icons.py` | Draws the app icons |
-| `tools/build_boundaries.py` | Rebuilds `data/` from Natural Earth (only needed to update borders) |
+| `tools/build_boundaries.py` | Rebuilds the country/region borders from Natural Earth |
+| `tools/build_admin2.py` | Rebuilds `data/adm2/` from geoBoundaries |
+| `tools/build_airports.py` | Rebuilds `data/airports.json` from OurAirports |
+| `tools/make_fake_text_formats.py` | Makes fake GPX/GeoJSON/CSV test files |
 
 ## Try it on your computer
 
@@ -81,3 +106,13 @@ Note: the phone and the laptop each keep **their own** copy of your data. Move d
 4. Every now and then, AirDrop both files to your laptop.
 
 Tap *Add monthly reminder to calendar* once, and your calendar will remind you on the 1st of every month.
+
+## Data sources and credits
+
+- Country and region borders: [Natural Earth](https://www.naturalearthdata.com) (public domain).
+- Provinces / counties / districts: [geoBoundaries](https://www.geoboundaries.org) (gbOpen, open licences;
+  Runfola et al. 2020, *geoBoundaries: A global database of political administrative boundaries*, PLoS ONE).
+  Each country's licence is listed in `data/adm2/index.json`.
+- Airports: [OurAirports](https://ourairports.com/data/) (public domain).
+- Map tiles: [OpenFreeMap](https://openfreemap.org), © [OpenMapTiles](https://openmaptiles.org), data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+- Libraries: [MapLibre GL JS](https://maplibre.org) (BSD-3) and [sql.js](https://sql.js.org) (MIT).

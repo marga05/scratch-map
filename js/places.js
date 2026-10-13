@@ -91,17 +91,45 @@ export async function loadBoundaries() {
     if (!r.ok) throw new Error(`Could not load border data (${f}).`);
     return r.json();
   });
-  const [countries, admin1, admin2] = await Promise.all([get('countries.json'), get('admin1.json'), get('admin2-ne.json')]);
+  const [countries, admin1, admin2, adm2Index] = await Promise.all([
+    get('countries.json'), get('admin1.json'), get('admin2-ne.json'),
+    get('adm2/index.json').catch(() => ({})),
+  ]);
   boundaries = {
     countries, admin1, admin2,
     idx1: new GeoIndex(admin1),
     idx2: new GeoIndex(admin2),
     countryById: new Map(countries.features.map((f) => [f.properties.id, f.properties])),
-    // Countries whose level-2 units we have (for now: the "grouped" ones like Spain)
+    // Countries whose level-2 units are loaded. Starts with the "grouped" ones
+    // like Spain; others (data/adm2/XXX.json) are loaded once you've been there.
     level2Countries: new Set(admin2.features.map((f) => f.properties.a0)),
+    adm2Index,
+    extraLevel2: [], // countries loaded from data/adm2/
   };
   boundaries.areaKm2 = new Map(countries.features.map((f) => [f.properties.id, areaKm2(f.geometry)]));
   return boundaries;
+}
+
+/**
+ * Load the level-2 file (counties, Landkreise, …) for any of these countries
+ * that has one and isn't loaded yet. Returns true if something new was loaded.
+ */
+export async function ensureLevel2(countryIds) {
+  const b = await loadBoundaries();
+  const todo = countryIds.filter((id) => b.adm2Index[id] && !b.level2Countries.has(id));
+  if (!todo.length) return false;
+  const loaded = await Promise.all(todo.map((id) =>
+    fetch(`data/adm2/${id}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
+  let any = false;
+  loaded.forEach((fc, i) => {
+    if (!fc) return; // offline and never downloaded: try again next time
+    b.admin2.features.push(...fc.features);
+    b.level2Countries.add(todo[i]);
+    b.extraLevel2.push(todo[i]);
+    any = true;
+  });
+  if (any) b.idx2 = new GeoIndex(b.admin2);
+  return any;
 }
 
 // ---------- local dates ----------
@@ -225,6 +253,8 @@ export async function updateVisits(settings, edits, range = {}, onProgress) {
   const savedByDay = new Map(saved.map((s) => [s.day, s]));
 
   const cellCache = new Map();
+  // When a new country's level-2 file arrives, days are re-analysed once to find its counties.
+  const l2key = [...b.extraLevel2].sort().join('');
   const fresh = [];
   const results = [];
   let done = 0;
@@ -233,7 +263,7 @@ export async function updateVisits(settings, edits, range = {}, onProgress) {
     // A day is re-analysed when its points, the settings, or a marked stretch near it change.
     const dayStart = Date.parse(`${c.day}T00:00:00Z`) / 1000;
     const near = stretches.filter((s) => s.toT >= dayStart - 86400 && s.fromT <= dayStart + 2 * 86400);
-    const ver = `${ANALYSIS_VERSION}|${settings.maxGroundKmh}|${near.map((s) => `${s.fromT}-${s.toT}${s.as}`).join(',')}`;
+    const ver = `${ANALYSIS_VERSION}|${settings.maxGroundKmh}|${l2key}|${near.map((s) => `${s.fromT}-${s.toT}${s.as}`).join(',')}`;
     const s = savedByDay.get(c.day);
     if (s && s.n === c.n && s.ver === ver) { results.push(s); continue; }
 
