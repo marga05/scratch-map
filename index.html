@@ -33,6 +33,7 @@
 
   <!-- Bottom toolbar -->
   <nav class="toolbar" aria-label="Main">
+    <button data-sheet="places"><span class="ico">◉</span>Places</button>
     <button data-sheet="layers"><span class="ico">◧</span>Layers</button>
     <button data-sheet="dates"><span class="ico">▦</span>Dates</button>
     <button data-sheet="import"><span class="ico">⤓</span>Import</button>
@@ -45,6 +46,7 @@
 
   <section class="sheet" id="sheet-layers" hidden>
     <header><h2>Layers</h2><button class="close" aria-label="Close">✕</button></header>
+    <label class="row toggle"><span>Scratch map <small>(gold = visited)</small></span><input type="checkbox" id="lyr-scratch" checked></label>
     <label class="row toggle"><span>Routes (lines)</span><input type="checkbox" id="lyr-routes" checked></label>
     <label class="row toggle"><span>GPS points <small>(shown when zoomed in)</small></span><input type="checkbox" id="lyr-points" checked></label>
     <label class="row toggle disabled"><span>Flights <small>(coming soon)</small></span><input type="checkbox" disabled></label>
@@ -54,10 +56,22 @@
       <button data-style="minimal">Minimal</button>
     </div>
     <h3>Scratch-map level</h3>
-    <div class="segmented disabled">
-      <button disabled>Countries</button><button disabled>Regions</button><button disabled>Provinces</button>
+    <div class="segmented" id="level-seg">
+      <button data-level="0">Countries</button><button data-level="1">Regions</button><button data-level="2">Provinces</button>
     </div>
-    <p class="hint">Scratch-map colouring comes in the next build step.</p>
+    <p class="hint" id="level-hint"></p>
+  </section>
+
+  <section class="sheet" id="sheet-places" hidden>
+    <header><h2>Places</h2><button class="close" aria-label="Close">✕</button></header>
+    <div class="totals" id="totals"></div>
+    <p class="hint">Counted from GPS on the ground; flights never count. Tap a country for details.</p>
+    <ul class="place-list" id="place-list"></ul>
+  </section>
+
+  <section class="sheet" id="sheet-place" hidden>
+    <header><h2 id="place-title">Place</h2><button class="close" aria-label="Close">✕</button></header>
+    <div id="place-body"></div>
   </section>
 
   <section class="sheet" id="sheet-dates" hidden>

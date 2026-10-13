@@ -6,6 +6,7 @@ import { buildTracks } from './tracks.js';
 import { MapView } from './mapview.js';
 import { buildBackupFile, shareOrDownload, markBackedUp, readBackupFile, restoreBackup } from './backup.js';
 import { dueReminders, buildMonthlyIcs } from './reminders.js';
+import { loadBoundaries, updateVisits, countAreas, stays, bbox } from './places.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -17,13 +18,18 @@ export const DEFAULT_SETTINGS = {
   maxGroundKmh: 400,
   reminderDays: 30,
   mapStyle: 'normal',
+  mapLevel: 0,        // 0 countries, 1 regions, 2 provinces
 };
 
 const state = {
   settings: { ...DEFAULT_SETTINGS },
   range: { from: null, to: null }, // 'YYYY-MM-DD' strings (local dates), null = open
   preparedBackup: null,
+  places: new Map(),  // "level:id" → place, see places.js
+  km: 0,
 };
+
+const LEVEL_NAMES = ['countries', 'regions', 'provinces'];
 
 // ---------- small helpers ----------
 
@@ -54,11 +60,13 @@ function openSheet(name) {
   onSheetOpen[name]?.();
 }
 function closeSheets() {
+  mapView?.select(null);
   $$('.sheet').forEach((s) => (s.hidden = true));
   $('#scrim').hidden = true;
   $$('.toolbar button').forEach((b) => b.classList.remove('active'));
 }
 const onSheetOpen = {
+  places: renderPlacesSheet,
   import: renderImportLog,
   backup: renderBackupStatus,
   settings: renderSettings,
@@ -81,11 +89,135 @@ async function refreshTracks({ fit = false } = {}) {
   mapView.setTrackData(tracks); // safe before the map finishes loading
   if (fit) mapView.fitTo(tracks.bounds);
 
-  const rangeLabel = from || to ? `${from ? fmtDate(fromT) : '…'} – ${to ? fmtDate(toT) : '…'}` : 'All time';
-  $('#status').textContent = tracks.count
-    ? `${rangeLabel} · ${fmtNum(tracks.count)} points · ${fmtNum(Math.round(tracks.totalKm))} km`
-    : (from || to ? `${rangeLabel} · no GPS points in this range` : 'No GPS points yet — tap Import');
+  state.trackCount = tracks.count;
+  state.km = tracks.totalKm;
+  renderStatus();
   return tracks;
+}
+
+function renderStatus() {
+  const { from, to } = state.range;
+  const rangeLabel = from || to
+    ? `${from ? fmtDate(new Date(`${from}T12:00`) / 1000) : '…'} – ${to ? fmtDate(new Date(`${to}T12:00`) / 1000) : '…'}`
+    : 'All time';
+  if (!state.trackCount) {
+    $('#status').textContent = from || to ? `${rangeLabel} · no GPS points in this range` : 'No GPS points yet — tap Import';
+    return;
+  }
+  const countries = [...state.places.values()].filter((p) => p.level === 0 && counts(p)).length;
+  $('#status').textContent =
+    `${rangeLabel} · ${countries} ${countries === 1 ? 'country' : 'countries'} · ${fmtNum(Math.round(state.km))} km`;
+}
+
+// ---------- places (scratch map) ----------
+
+/** Does this place count in totals? (Later: "passed through" places can be switched off.) */
+const counts = (p) => p.status === 'visited';
+
+async function refreshPlaces() {
+  const before = new Set(state.places.keys());
+  state.places = await updateVisits(state.settings, state.range, (done, total) => {
+    $('#status').textContent = `Finding places… ${Math.round((done / total) * 100)}%`;
+  });
+  mapView.setPlaceStates(state.places);
+  renderStatus();
+  return [...state.places.keys()].filter((k) => !before.has(k));
+}
+
+function placesOf(level, a0) {
+  return [...state.places.values()].filter((p) => p.level === level && (a0 == null || p.a0 === a0));
+}
+
+function renderPlacesSheet() {
+  const all = [...state.places.values()].filter(counts);
+  const n = (lvl) => all.filter((p) => p.level === lvl).length;
+  const allDates = new Set(all.filter((p) => p.level === 0).flatMap((p) => [...p.dates]));
+  $('#totals').innerHTML = `
+    <div><b>${n(0)}</b><span>countries</span></div>
+    <div><b>${n(1)}</b><span>regions</span></div>
+    <div><b>${fmtNum(allDates.size)}</b><span>days travelled</span></div>`;
+
+  const countries = placesOf(0).filter(counts).sort((a, b) => b.dates.size - a.dates.size);
+  $('#place-list').innerHTML = countries.length
+    ? countries.map((c) => {
+      const r = placesOf(1, c.id).filter(counts).length;
+      const r2 = placesOf(2, c.id).filter(counts).length;
+      const total2 = countAreas(c.id, 2);
+      return `<li><button data-level="0" data-id="${esc(c.id)}">
+        <span class="swatch ${c.status}"></span>
+        <span class="grow">${esc(c.name)}
+          <small>${r}/${countAreas(c.id, 1)} regions${total2 ? ` · ${r2}/${total2} provinces` : ''}</small></span>
+        <span class="days">${c.dates.size} ${c.dates.size === 1 ? 'day' : 'days'}</span>
+      </button></li>`;
+    }).join('')
+    : '<li class="hint">No places yet. Import GPS data to fill your map.</li>';
+  $$('#place-list button').forEach((b) => (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id)));
+}
+
+const fmtLocalDate = (d) =>
+  new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+function fmtStay(s) {
+  if (s.from === s.to) return fmtLocalDate(s.from);
+  const a = new Date(`${s.from}T12:00:00`), b = new Date(`${s.to}T12:00:00`);
+  const sameMonth = a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+  return sameMonth
+    ? `${a.getDate()}–${fmtLocalDate(s.to)}`
+    : `${a.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} – ${fmtLocalDate(s.to)}`;
+}
+
+function openPlace(level, id) {
+  const key = `${level}:${id}`;
+  const p = state.places.get(key);
+  const feature = mapView.featureOf(level, id);
+  const name = p?.name ?? feature?.properties.name ?? id;
+  const a0 = p?.a0 ?? (level === 0 ? id : feature?.properties.a0);
+  const country = level > 0 ? state.places.get(`0:${a0}`)?.name ?? mapView.featureOf(0, a0)?.properties.name : null;
+
+  $('#place-title').textContent = name;
+  const body = $('#place-body');
+  if (!p) {
+    body.innerHTML = `
+      ${country ? `<p class="hint">${esc(country)}</p>` : ''}
+      <p><span class="badge">Not visited</span></p>
+      <p class="hint">No GPS points on the ground here${state.range.from || state.range.to ? ' in the selected dates' : ''}.
+      Adding places by hand comes in a later step.</p>`;
+  } else {
+    const st = stays(p.dates);
+    const sub = level < 2 ? placesOf(level + 1, level === 0 ? id : a0)
+      .filter((x) => level === 0 || x.l1 === id)
+      .filter(counts)
+      .sort((x, y) => y.dates.size - x.dates.size) : [];
+    body.innerHTML = `
+      ${country ? `<p class="hint">${esc(country)}</p>` : ''}
+      <p><span class="badge ${p.status}">Visited</span> <span class="hint">· from GPS</span></p>
+      <div class="facts">
+        <div><small>Days</small><b>${p.dates.size}</b></div>
+        <div><small>Stays</small><b>${st.length}</b></div>
+        <div><small>First visit</small>${fmtLocalDate([...p.dates].sort()[0])}</div>
+        <div><small>Last visit</small>${fmtLocalDate([...p.dates].sort().at(-1))}</div>
+      </div>
+      <button class="btn primary wide" id="place-zoom">Zoom to my routes here</button>
+      <h3>Dates</h3>
+      <ul class="stays">${st.slice().reverse().map((s) =>
+        `<li><span>${fmtStay(s)}</span><span>${s.days} ${s.days === 1 ? 'day' : 'days'}</span></li>`).join('')}</ul>
+      ${sub.length ? `<h3>${level === 0 ? 'Regions' : 'Provinces'} visited</h3>
+      <ul class="place-list">${sub.map((x) => `<li><button data-level="${x.level}" data-id="${esc(x.id)}">
+        <span class="swatch ${x.status}"></span><span class="grow">${esc(x.name)}</span>
+        <span class="days">${x.dates.size} ${x.dates.size === 1 ? 'day' : 'days'}</span></button></li>`).join('')}</ul>` : ''}`;
+    $('#place-zoom').onclick = () => { closeSheets(); mapView.fitTo(p.bounds); };
+    body.querySelectorAll('.place-list button').forEach((b) =>
+      (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id)));
+  }
+  openSheet('place');
+  mapView.select(level, id); // after openSheet, which clears the old selection
+  if (!p && feature) mapView.fitTo(bbox(feature.geometry));
+}
+
+async function setLevel(level) {
+  state.settings.mapLevel = level;
+  await setMeta('settings', state.settings);
+  mapView.setLevel(level);
+  renderLayersSheet();
 }
 
 // ---------- reminders banner ----------
@@ -114,6 +246,10 @@ async function handleImport(files) {
     prog.textContent = `Reading ${file.name}…`;
     try {
       const s = await importScoriaFile(file, state.settings);
+      prog.textContent = 'Finding countries and regions…';
+      const fresh = await refreshPlaces();
+      const newNames = (lvl) => fresh.filter((k) => k.startsWith(`${lvl}:`)).map((k) => state.places.get(k).name);
+      const nc = newNames(0), nr = newNames(1);
       out.insertAdjacentHTML('beforeend', `
         <div class="result ok">
           <b>${esc(s.fileName)}</b>
@@ -128,6 +264,8 @@ async function handleImport(files) {
             <dt>New days with data</dt><dd>${fmtNum(s.newDays)}</dd>
             ${s.pinsAdded ? `<dt>Saved places added</dt><dd>${fmtNum(s.pinsAdded)}</dd>` : ''}
           </dl>
+          ${nc.length ? `<p><b>New countries:</b> ${esc(nc.join(', '))}</p>` : ''}
+          ${nr.length ? `<p><b>New regions:</b> ${esc(nr.join(', '))}</p>` : ''}
         </div>`);
     } catch (e) {
       console.error(e);
@@ -207,6 +345,7 @@ async function handleRestore(file) {
     await loadSettings();
     out.innerHTML = `<div class="result ok">Restored ✓ ${fmtNum(data.pointCount)} GPS points.</div>`;
     await refreshTracks({ fit: true });
+    await refreshPlaces();
     renderBackupStatus();
     checkReminders();
   } catch (e) {
@@ -232,6 +371,7 @@ async function applyRange(from, to) {
   $$('#date-presets button').forEach((b) => b.classList.remove('on'));
   closeSheets();
   await refreshTracks({ fit: true });
+  await refreshPlaces();
 }
 
 function presetRange(preset) {
@@ -249,6 +389,12 @@ function presetRange(preset) {
 
 function renderLayersSheet() {
   $$('#style-seg button').forEach((b) => b.classList.toggle('on', b.dataset.style === state.settings.mapStyle));
+  $$('#level-seg button').forEach((b) => b.classList.toggle('on', Number(b.dataset.level) === state.settings.mapLevel));
+  $('#level-hint').textContent = [
+    'Whole countries.',
+    'States, comunidades, Bundesländer, régions, regioni… for every country.',
+    'For now only where the border data has them: Spain (provincias), France (départements), Italy (province), UK (councils), and a few more. More countries come in a later step.',
+  ][state.settings.mapLevel];
 }
 
 // ---------- settings ----------
@@ -285,7 +431,8 @@ async function saveSettings(ev) {
   await setMeta('settings', state.settings);
   toast('Settings saved ✓');
   closeSheets();
-  refreshTracks();
+  await refreshTracks();
+  refreshPlaces();
   checkReminders();
 }
 
@@ -296,6 +443,7 @@ async function wipeAll() {
   state.settings = { ...DEFAULT_SETTINGS };
   closeSheets();
   await refreshTracks();
+  await refreshPlaces();
   toast('All data deleted.');
   checkReminders();
 }
@@ -305,6 +453,8 @@ async function wipeAll() {
 async function init() {
   await loadSettings();
   mapView = new MapView('map', { style: state.settings.mapStyle });
+  mapView.setLevel(state.settings.mapLevel);
+  mapView.onPlaceTap = (level, id) => openPlace(level, id);
 
   // Toolbar + sheets
   $$('.toolbar button').forEach((b) => (b.onclick = () => {
@@ -318,7 +468,9 @@ async function init() {
   $('#banner-close').onclick = () => { sessionStorage.setItem('bannerDismissed', '1'); $('#banner').hidden = true; };
 
   // Layers
+  $('#lyr-scratch').onchange = (e) => mapView.setVisible('scratch', e.target.checked);
   $('#lyr-routes').onchange = (e) => mapView.setVisible('routes', e.target.checked);
+  $$('#level-seg button').forEach((b) => (b.onclick = () => setLevel(Number(b.dataset.level))));
   $('#lyr-points').onchange = (e) => mapView.setVisible('points', e.target.checked);
   $$('#style-seg button').forEach((b) => (b.onclick = async () => {
     state.settings.mapStyle = b.dataset.style;
@@ -352,6 +504,8 @@ async function init() {
   requestPersistence();
   await refreshTracks({ fit: true });
   checkReminders();
+  mapView.setBoundaries(await loadBoundaries());
+  await refreshPlaces();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker failed', e));

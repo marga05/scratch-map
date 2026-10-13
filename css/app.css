@@ -153,3 +153,29 @@ code { font-size: 0.9em; background: var(--line); padding: 1px 5px; border-radiu
   background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: 14px;
   box-shadow: var(--shadow); max-width: 90vw;
 }
+
+/* Places */
+.totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 4px; }
+.totals div { background: var(--line); border-radius: 14px; padding: 10px; text-align: center; }
+.totals b { display: block; font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.totals span { font-size: 12px; color: var(--muted); }
+.place-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.place-list li { border-bottom: 1px solid var(--line); }
+.place-list button {
+  width: 100%; min-height: 56px; display: flex; align-items: center; gap: 12px; text-align: left;
+  border: 0; background: none; color: var(--fg); font: inherit; padding: 8px 2px;
+}
+.place-list .swatch { width: 14px; height: 14px; border-radius: 4px; flex: none; background: #e0a526; }
+.place-list .swatch.passed { background: #f2d68c; }
+.place-list .grow { flex: 1; min-width: 0; }
+.place-list small { display: block; color: var(--muted); font-size: 12px; }
+.place-list .days { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--line); }
+.badge.visited { background: #e0a526; color: #3b2a00; }
+.badge.passed { background: #f2d68c; color: #3b2a00; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.facts div { background: var(--line); border-radius: 12px; padding: 8px 10px; }
+.facts small { display: block; color: var(--muted); font-size: 12px; }
+.stays { list-style: none; padding: 0; margin: 0; font-size: 14px; }
+.stays li { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.stays li span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }

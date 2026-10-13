@@ -82,7 +82,7 @@ export async function readBackupFile(file) {
 
 /** Replace everything in the app with the backup's contents. */
 export async function restoreBackup(data) {
-  await clearStores(['chunks', ...USER_STORES]);
+  await clearStores(['chunks', 'dayVisits', ...USER_STORES]);
   await putMany('chunks', data.chunks);
   for (const s of USER_STORES) await putMany(s, data.stores?.[s] ?? []);
   for (const [k, v] of Object.entries(data.meta ?? {})) await setMeta(k, v);

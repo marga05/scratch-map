@@ -1,14 +1,14 @@
 # Scratch Map
 
 A personal travel map for your iPhone. It shows the exact GPS routes you've
-travelled (recorded by the **Scoria** app). The scratch-map colouring,
-days per place, flights and manual places are still to come. It's free, has no
-server or account, and your data stays on your phone except for backups you
-choose to make.
+travelled (recorded by the **Scoria** app) and colours every country and region
+you've been to in gold, with how many days you spent there and on which dates.
+Flights and manual places are still to come. It's free, has no server or
+account, and your data stays on your phone except for backups you choose to make.
 
 The full wish list is in [scratch-map-brief.md](scratch-map-brief.md).
 
-## What works so far (build steps 1–3)
+## What works so far (build steps 1–6)
 
 - **Installable app (PWA):** add it to your home screen and it opens full-screen, even offline.
 - **Import Scoria `.sqlite` files.** Duplicate points are skipped, so importing the same history twice is safe.
@@ -17,6 +17,12 @@ The full wish list is in [scratch-map-brief.md](scratch-map-brief.md).
   impossible speeds such as flights, so there are no fake straight lines across the sea. Normal and Minimal map styles are available.
 - **Date filter:** all time, this year, last year, last 30 days, or a custom range.
 - **Backup:** packs everything into one small file and opens the iPhone share sheet → *Save to Files* → iCloud Drive. **Restore** reads that file back.
+- **Scratch map:** countries, regions and (for Spain, France, Italy, the UK and a few others) provinces turn gold
+  when you have GPS points there on the ground. Fast-moving points (flights) never count. Switch levels under **Layers**.
+  Spain shows its 17 comunidades + Ceuta/Melilla, France its 18 régions, Italy its 20 regioni, and the UK England/Scotland/Wales/NI.
+- **Days per place:** tap any area, or use the **Places** list, to see total days, each stay (e.g. "3–8 Aug 2026, 6 days"),
+  first and last visit, and the regions inside it. Days are counted in the place's **local time zone**, and a travel day
+  counts for every place you were in. The date filter applies to these too.
 - **Reminders:** a banner appears when your last import or backup is older than 30 days (adjustable). There's also a button that
   adds a **monthly calendar reminder** (1st of each month) with the checklist.
 
@@ -33,10 +39,13 @@ The full wish list is in [scratch-map-brief.md](scratch-map-brief.md).
 | `js/mapview.js` | The map (MapLibre + free OpenFreeMap tiles) |
 | `js/backup.js` | Backup file: make, share, restore |
 | `js/reminders.js` | Banner logic + calendar (.ics) reminder |
+| `js/places.js` | Works out which countries/regions you visited, and on which local dates |
+| `data/` | Simplified borders from Natural Earth (public domain), with time zones |
 | `sw.js` | Service worker: keeps the app working offline |
 | `vendor/` | Libraries (MapLibre GL 6.14, sql.js 1.14), stored locally so nothing loads from elsewhere |
 | `tools/make_fake_scoria.py` | Makes fake test data → `test-data/fake-scoria.sqlite` |
 | `tools/make_icons.py` | Draws the app icons |
+| `tools/build_boundaries.py` | Rebuilds `data/` from Natural Earth (only needed to update borders) |
 
 ## Try it on your computer
 

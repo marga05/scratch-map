@@ -6,7 +6,7 @@
 // • Map tiles/styles from OpenFreeMap: saved as you view them, so places you've
 //   looked at still show offline. Capped so it doesn't fill your phone.
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const APP_CACHE = `scratchmap-app-${VERSION}`;
 const TILE_CACHE = 'scratchmap-tiles';
 const MAX_TILES = 4000;
@@ -23,6 +23,10 @@ const APP_FILES = [
   'js/mapview.js',
   'js/backup.js',
   'js/reminders.js',
+  'js/places.js',
+  'data/countries.json',
+  'data/admin1.json',
+  'data/admin2-ne.json',
   'vendor/maplibre/maplibre-gl.mjs',
   'vendor/maplibre/maplibre-gl-worker.mjs',
   'vendor/maplibre/maplibre-gl.css',

@@ -8,7 +8,7 @@
 // stores, completely separate from GPS data, so re-importing never touches them.
 
 const DB_NAME = 'scratchmap';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const STORES = {
   chunks: 'chunks',         // key: 'YYYY-MM-DD' (UTC) → { day, t[], lat[], lon[], acc[], spd[], alt[] }
@@ -19,6 +19,7 @@ export const STORES = {
   corrections: 'corrections',
   flights: 'flights',
   trips: 'trips',
+  dayVisits: 'dayVisits',   // key: 'YYYY-MM-DD' (UTC) → which places were visited that day (re-computable, not backed up)
 };
 
 // Stores that hold *your* data (not raw GPS) — all go into backups as-is.
@@ -34,6 +35,7 @@ export function openDB() {
       const db = req.result;
       if (!db.objectStoreNames.contains('chunks')) db.createObjectStore('chunks', { keyPath: 'day' });
       if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta');
+      if (!db.objectStoreNames.contains('dayVisits')) db.createObjectStore('dayVisits', { keyPath: 'day' });
       for (const s of USER_STORES) {
         if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: 'id', autoIncrement: true });
       }

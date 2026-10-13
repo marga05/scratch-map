@@ -6,7 +6,8 @@ You only need this if you want to rebuild the border data.
        ne_10m_admin_0_countries.geojson
        ne_10m_admin_1_states_provinces.geojson
   2. python3 tools/build_boundaries.py <folder with those files>
-     (needs Node.js; mapshaper is fetched automatically with npx)
+     (needs Node.js; mapshaper is fetched automatically with npx, and
+      geo-tz must be installed: npm install geo-tz@8)
 
 Writes:
   data/countries.json   level 0 – countries
@@ -101,6 +102,11 @@ def main(src):
         "-filter-fields", "id,name,a0,l1",
         "-o", str(out / "admin2-ne.json"), "format=geojson", "precision=0.0001",
     )
+
+    # Each region gets its time zone, so days can be counted in local time.
+    inner = tmp / "a1_inner.geojson"
+    mapshaper(str(out / "admin1.json"), "-points", "inner", "-o", str(inner), "format=geojson")
+    subprocess.run(["node", str(Path(__file__).resolve().parent / "add_timezones.js"), str(inner)], check=True)
 
     for f in ("countries.json", "admin1.json", "admin2-ne.json"):
         n = len(json.loads((out / f).read_text())["features"])
