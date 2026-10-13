@@ -100,6 +100,7 @@ export async function loadBoundaries() {
     // Countries whose level-2 units we have (for now: the "grouped" ones like Spain)
     level2Countries: new Set(admin2.features.map((f) => f.properties.a0)),
   };
+  boundaries.areaKm2 = new Map(countries.features.map((f) => [f.properties.id, areaKm2(f.geometry)]));
   return boundaries;
 }
 
@@ -411,4 +412,36 @@ export function searchPlaces(query, limit = 12) {
   b.admin2.features.forEach((f) => consider(2, f.properties));
   results.sort((x, y) => x.score - y.score || x.name.localeCompare(y.name));
   return results.slice(0, limit).map((r) => ({ ...r, country: b.countryById.get(r.a0)?.name ?? r.a0 }));
+}
+
+// ---------- stats helpers ----------
+
+/** Approximate area of a shape in km² (good enough for "% of the world"). */
+function areaKm2(g) {
+  const R = 6371;
+  const rad = Math.PI / 180;
+  const ringArea = (ring) => {
+    let sum = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [x1, y1] = ring[j], [x2, y2] = ring[i];
+      sum += (x2 - x1) * rad * (2 + Math.sin(y1 * rad) + Math.sin(y2 * rad));
+    }
+    return Math.abs((sum * R * R) / 2);
+  };
+  const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+  let total = 0;
+  for (const poly of polys) poly.forEach((ring, i) => (total += i === 0 ? ringArea(ring) : -ringArea(ring)));
+  return Math.max(total, 0);
+}
+
+export function countryArea(id) { return boundaries.areaKm2.get(id) ?? 0; }
+export function worldLandKm2() { let t = 0; for (const a of boundaries.areaKm2.values()) t += a; return t; }
+export function continentOf(id) { return boundaries.countryById.get(id)?.cont ?? null; }
+
+/** "Berlin, Germany" for a coordinate (or null at sea). */
+export function whereIs(lon, lat) {
+  const r = boundaries.idx1.find(lon, lat);
+  if (!r) return null;
+  const country = boundaries.countryById.get(r.properties.a0)?.name;
+  return country && country !== r.properties.name ? `${r.properties.name}, ${country}` : r.properties.name;
 }

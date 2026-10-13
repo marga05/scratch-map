@@ -6,7 +6,7 @@
 // • Map tiles/styles from OpenFreeMap: saved as you view them, so places you've
 //   looked at still show offline. Capped so it doesn't fill your phone.
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const APP_CACHE = `scratchmap-app-${VERSION}`;
 const TILE_CACHE = 'scratchmap-tiles';
 const MAX_TILES = 4000;
@@ -85,7 +85,9 @@ self.addEventListener('fetch', (event) => {
   if (url.origin === self.location.origin) {
     event.respondWith((async () => {
       const cache = await caches.open(APP_CACHE);
-      const network = fetch(req).then((res) => {
+      // cache: 'no-cache' = always ask the server "has this changed?" (cheap when it hasn't),
+      // so after an update every file is the new version, never a mix of old and new.
+      const network = fetch(req, { cache: 'no-cache' }).then((res) => {
         if (res.ok) cache.put(req, res.clone());
         return res;
       });

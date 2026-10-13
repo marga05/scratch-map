@@ -7,7 +7,10 @@ import { buildTracks } from './tracks.js';
 import { MapView } from './mapview.js';
 import { buildBackupFile, shareOrDownload, markBackedUp, readBackupFile, restoreBackup } from './backup.js';
 import { dueReminders, buildMonthlyIcs } from './reminders.js';
-import { loadBoundaries, updateVisits, countAreas, stays, bbox, searchPlaces, describe } from './places.js';
+import {
+  loadBoundaries, updateVisits, countAreas, stays, bbox, searchPlaces, describe,
+  countryArea, worldLandKm2, continentOf, whereIs,
+} from './places.js';
 import {
   loadAirports, searchAirports, airportLabel, airportSnapshot, flightsGeoJSON, flightKm, detectFlights,
 } from './flights.js';
@@ -103,6 +106,8 @@ async function refreshTracks({ fit = false } = {}) {
 
   state.trackCount = tracks.count;
   state.km = tracks.totalKm;
+  state.kmByYear = tracks.kmByYear;
+  state.extremes = tracks.extremes;
   renderStatus();
   return tracks;
 }
@@ -172,6 +177,7 @@ function renderPlacesSheet() {
     <div><b>${n(0)}</b><span>countries</span></div>
     <div><b>${n(1)}</b><span>regions</span></div>
     <div><b>${fmtNum(allDates.size)}</b><span>days travelled</span></div>`;
+  renderStats(all);
   $('#places-hint').innerHTML = `
     <span class="legend">
       <span><i style="background:#e0a526"></i>visited</span>
@@ -191,6 +197,34 @@ function renderPlacesSheet() {
     : '<li class="hint">No places yet. Import GPS data, or search above to add places by hand.</li>';
   wirePlaceButtons($('#place-list'));
   renderStretchList();
+}
+
+function renderStats(counted) {
+  const countries = counted.filter((p) => p.level === 0);
+  const continents = [...new Set(countries.map((c) => continentOf(c.id)).filter(Boolean))].sort();
+  const land = countries.reduce((s, c) => s + countryArea(c.id), 0);
+  const pct = (land / worldLandKm2()) * 100;
+  const flownKm = state.flights
+    .filter((f) => !(state.range.from && f.date < state.range.from) && !(state.range.to && f.date > state.range.to))
+    .reduce((s, f) => s + flightKm(f), 0);
+  const years = Object.entries(state.kmByYear ?? {}).sort(([a], [b]) => b - a);
+  const ex = state.extremes ?? {};
+  const deg = (v, pos, neg) => `${Math.abs(v).toFixed(2)}° ${v >= 0 ? pos : neg}`;
+  const extremeRow = (label, p, value) => p
+    ? `<li><span>${label}</span><span>${value} · ${esc(whereIs(p.lon, p.lat) ?? 'at sea')}</span></li>` : '';
+  $('#stats').innerHTML = `
+    <ul class="stays">
+      <li><span>On the ground (GPS)</span><span>${fmtNum(Math.round(state.km ?? 0))} km</span></li>
+      <li><span>Flown</span><span>${fmtNum(Math.round(flownKm))} km</span></li>
+      <li><span>Continents</span><span>${continents.length ? esc(continents.join(', ')) : '–'}</span></li>
+      <li><span>World land visited</span><span>${pct < 0.1 && pct > 0 ? pct.toFixed(2) : pct.toFixed(1)} % <small class="hint">(by country area)</small></span></li>
+      ${extremeRow('Northernmost', ex.north, ex.north && deg(ex.north.lat, 'N', 'S'))}
+      ${extremeRow('Southernmost', ex.south, ex.south && deg(ex.south.lat, 'N', 'S'))}
+      ${extremeRow('Easternmost', ex.east, ex.east && deg(ex.east.lon, 'E', 'W'))}
+      ${extremeRow('Westernmost', ex.west, ex.west && deg(ex.west.lon, 'E', 'W'))}
+    </ul>
+    ${years.length ? `<h3>Km per year (on the ground)</h3><ul class="stays">${years.map(([y, km]) =>
+      `<li><span>${y}</span><span>${fmtNum(Math.round(km))} km</span></li>`).join('')}</ul>` : ''}`;
 }
 
 function renderPlaceSearch() {

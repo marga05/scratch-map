@@ -33,6 +33,9 @@ export function buildTracks(chunks, settings, range = {}) {
   // spot, so GPS "wobble" while standing still doesn't add fake kilometres.
   let anchor = null;
   const MIN_STEP_KM = 0.1;
+  const kmByYear = {};
+  // The furthest north / south / east / west points you've been
+  const extremes = { north: null, south: null, east: null, west: null };
 
   const flush = () => {
     if (current.length >= 2) {
@@ -60,7 +63,12 @@ export function buildTracks(chunks, settings, range = {}) {
       if (!anchor) anchor = { lat, lon };
       else {
         const stepKm = distanceKm(anchor.lat, anchor.lon, lat, lon);
-        if (stepKm >= MIN_STEP_KM) { totalKm += stepKm; anchor = { lat, lon }; }
+        if (stepKm >= MIN_STEP_KM) {
+          totalKm += stepKm;
+          const y = new Date(t * 1000).getFullYear();
+          kmByYear[y] = (kmByYear[y] ?? 0) + stepKm;
+          anchor = { lat, lon };
+        }
       }
 
       current.push([lon, lat]);
@@ -69,6 +77,10 @@ export function buildTracks(chunks, settings, range = {}) {
         properties: { t, acc: c.acc[i], spd: c.spd[i] },
         geometry: { type: 'Point', coordinates: [lon, lat] },
       });
+      if (!extremes.north || lat > extremes.north.lat) extremes.north = { lat, lon, t };
+      if (!extremes.south || lat < extremes.south.lat) extremes.south = { lat, lon, t };
+      if (!extremes.east || lon > extremes.east.lon) extremes.east = { lat, lon, t };
+      if (!extremes.west || lon < extremes.west.lon) extremes.west = { lat, lon, t };
       if (lon < bounds[0]) bounds[0] = lon;
       if (lat < bounds[1]) bounds[1] = lat;
       if (lon > bounds[2]) bounds[2] = lon;
@@ -84,6 +96,8 @@ export function buildTracks(chunks, settings, range = {}) {
     bounds: count ? bounds : null,
     count,
     totalKm,
+    kmByYear,
+    extremes,
     splits,
   };
 }

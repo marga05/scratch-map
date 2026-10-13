@@ -247,3 +247,7 @@ input[type=datetime-local] { width: 100%; min-height: 44px; font: inherit; font-
 .sample { border-collapse: collapse; font-size: 12px; margin: 6px 0; }
 .sample th, .sample td { border: 1px solid var(--line); padding: 3px 6px; white-space: nowrap; text-align: left; }
 .row.field select { font: inherit; font-size: 16px; max-width: 55%; padding: 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+
+.stats-box { border: 1px solid var(--line); border-radius: 14px; padding: 0 12px; margin: 10px 0; }
+.stats-box summary { font-weight: 600; padding: 10px 0; }
+.stays li span:last-child { text-align: right; }
