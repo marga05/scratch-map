@@ -215,3 +215,31 @@ code { font-size: 0.9em; background: var(--line); padding: 1px 5px; border-radiu
   .toast { bottom: 24px; }
   .btn:hover { filter: brightness(0.96); }
 }
+
+/* Search boxes + airport pickers */
+.search input, .airport-field input {
+  width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; min-height: 44px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+}
+.search { margin: 12px 0 4px; }
+.airport-field { margin: 8px 0; }
+.airport-field label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.airport-field input.chosen { border-color: var(--ok); }
+.suggest:empty, #place-search-results:empty { display: none; }
+.suggest, #place-search-results { border: 1px solid var(--line); border-radius: 12px; margin-top: 4px; padding: 0 10px; }
+.place-list .icon-btn { flex: none; width: 40px; min-height: 40px; justify-content: center; border-radius: 10px; color: var(--muted); }
+.place-list .icon-btn:hover { background: var(--line); }
+.row-actions { display: flex; gap: 8px; }
+.row-actions .btn { flex: 1; min-height: 40px; font-size: 14px; }
+details summary { cursor: pointer; padding: 8px 0; }
+input[type=datetime-local] { width: 100%; min-height: 44px; font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+.manual-form { border: 1px solid var(--line); border-radius: 14px; padding: 4px 12px 10px; margin: 10px 0; }
+.manual-form textarea { width: 100%; font: inherit; font-size: 16px; border-radius: 10px; border: 1px solid var(--line); padding: 8px 10px; background: var(--bg); color: var(--fg); }
+.badge.manual { background: repeating-linear-gradient(135deg, #e0a526 0 3px, #f6e3b0 3px 7px); color: #3b2a00; }
+.badge.not { background: var(--line); }
+.place-list .swatch.manual { background: repeating-linear-gradient(135deg, #e0a526 0 3px, #f6e3b0 3px 6px); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); margin: 6px 0; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.maplibregl-popup-content { font: 14px/1.4 -apple-system, system-ui, sans-serif; color: #14213d; padding: 12px 14px; border-radius: 12px; }
+.maplibregl-popup-content .btn { min-height: 36px; font-size: 13px; padding: 0 10px; margin-top: 6px; }

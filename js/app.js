@@ -1,12 +1,15 @@
 // app.js — the "conductor": connects buttons and panels to the other modules.
 
-import { getMeta, setMeta, getChunks, getPointStats, getAll, requestPersistence, clearStores, STORES, dayKey } from './db.js';
+import { getMeta, setMeta, getChunks, getPointStats, getAll, add, del, requestPersistence, clearStores, STORES, dayKey } from './db.js';
 import { importScoriaFile } from './importer.js';
 import { buildTracks } from './tracks.js';
 import { MapView } from './mapview.js';
 import { buildBackupFile, shareOrDownload, markBackedUp, readBackupFile, restoreBackup } from './backup.js';
 import { dueReminders, buildMonthlyIcs } from './reminders.js';
-import { loadBoundaries, updateVisits, countAreas, stays, bbox } from './places.js';
+import { loadBoundaries, updateVisits, countAreas, stays, bbox, searchPlaces, describe } from './places.js';
+import {
+  loadAirports, searchAirports, airportLabel, airportSnapshot, flightsGeoJSON, flightKm, detectFlights,
+} from './flights.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -19,6 +22,8 @@ export const DEFAULT_SETTINGS = {
   reminderDays: 30,
   mapStyle: 'normal',
   mapLevel: 0,        // 0 countries, 1 regions, 2 provinces
+  dwellMinutes: 120,  // stop this long in a place → "visited"; less → "passed through"
+  countPassed: false, // count "passed through" places in totals?
 };
 
 const state = {
@@ -26,10 +31,12 @@ const state = {
   range: { from: null, to: null }, // 'YYYY-MM-DD' strings (local dates), null = open
   preparedBackup: null,
   places: new Map(),  // "level:id" → place, see places.js
+  edits: { manual: [], corrections: [] },
+  flights: [],
+  stretchDraft: {},
+  stretchAs: 'passed',
   km: 0,
 };
-
-const LEVEL_NAMES = ['countries', 'regions', 'provinces'];
 
 // ---------- small helpers ----------
 
@@ -71,8 +78,8 @@ function closeSheets() {
 }
 const onSheetOpen = {
   places: renderPlacesSheet,
-  import: renderImportLog,
-  backup: renderBackupStatus,
+  flights: renderFlightsSheet,
+  data: () => { renderImportLog(); renderBackupStatus(); },
   settings: renderSettings,
   dates: renderDateSheet,
   layers: renderLayersSheet,
@@ -115,21 +122,45 @@ function renderStatus() {
 
 // ---------- places (scratch map) ----------
 
-/** Does this place count in totals? (Later: "passed through" places can be switched off.) */
-const counts = (p) => p.status === 'visited';
+/** Does this place count in totals? "Passed through" only if you switched that on in Settings. */
+const counts = (p) => p.status === 'visited' || (p.status === 'passed' && state.settings.countPassed);
+/** Is it coloured on the map at all? */
+const shows = (p) => p.status === 'visited' || p.status === 'passed';
+const swatchClass = (p) => (p.source === 'manual' && p.status === 'visited' ? 'manual' : p.status);
+const plural = (n, word) => `${fmtNum(n)} ${word}${n === 1 ? '' : 's'}`;
+const STATUS_LABEL = { visited: 'Visited', passed: 'Passed through', not: 'Not visited' };
+
+function fmtDuration(sec) {
+  if (sec < 3600) return `${Math.round(sec / 60)} min`;
+  if (sec < 86400 * 2) return `${Math.floor(sec / 3600)} h ${Math.round((sec % 3600) / 60)} min`;
+  return `${Math.round(sec / 86400)} days`;
+}
 
 async function refreshPlaces() {
-  const before = new Set(state.places.keys());
-  state.places = await updateVisits(state.settings, state.range, (done, total) => {
+  const before = new Set([...state.places].filter(([, p]) => shows(p)).map(([k]) => k));
+  const [manual, corrections] = await Promise.all([getAll(STORES.manualPlaces), getAll(STORES.corrections)]);
+  state.edits = { manual, corrections };
+  state.places = await updateVisits(state.settings, state.edits, state.range, (done, total) => {
     $('#status').textContent = `Finding places… ${Math.round((done / total) * 100)}%`;
   });
   mapView.setPlaceStates(state.places);
   renderStatus();
-  return [...state.places.keys()].filter((k) => !before.has(k));
+  return [...state.places].filter(([k, p]) => shows(p) && !before.has(k)).map(([k]) => k);
 }
 
 function placesOf(level, a0) {
   return [...state.places.values()].filter((p) => p.level === level && (a0 == null || p.a0 === a0));
+}
+
+const placeButton = (p, extra = '') => `<li><button data-level="${p.level}" data-id="${esc(p.id)}">
+  <span class="swatch ${swatchClass(p)}"></span>
+  <span class="grow">${esc(p.name)}${extra}</span>
+  <span class="days">${p.dates.size ? plural(p.dates.size, 'day') : p.status === 'passed' ? 'passed' : ''}</span>
+</button></li>`;
+
+function wirePlaceButtons(root) {
+  root.querySelectorAll('button[data-level]').forEach((b) =>
+    (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id, { fly: true })));
 }
 
 function renderPlacesSheet() {
@@ -140,22 +171,39 @@ function renderPlacesSheet() {
     <div><b>${n(0)}</b><span>countries</span></div>
     <div><b>${n(1)}</b><span>regions</span></div>
     <div><b>${fmtNum(allDates.size)}</b><span>days travelled</span></div>`;
+  $('#places-hint').innerHTML = `
+    <span class="legend">
+      <span><i style="background:#e0a526"></i>visited</span>
+      <span><i style="background:#f2d68c"></i>passed through</span>
+      <span><i class="manual-i" style="background:repeating-linear-gradient(135deg,#e0a526 0 3px,#f6e3b0 3px 6px)"></i>added by hand</span>
+    </span>
+    Flights never count. ${state.settings.countPassed ? '"Passed through" places are counted.' : '"Passed through" places aren\'t counted in totals.'}`;
 
-  const countries = placesOf(0).filter(counts).sort((a, b) => b.dates.size - a.dates.size);
+  const countries = placesOf(0).filter(shows).sort((a, b) => b.dates.size - a.dates.size || a.name.localeCompare(b.name));
   $('#place-list').innerHTML = countries.length
     ? countries.map((c) => {
       const r = placesOf(1, c.id).filter(counts).length;
       const r2 = placesOf(2, c.id).filter(counts).length;
       const total2 = countAreas(c.id, 2);
-      return `<li><button data-level="0" data-id="${esc(c.id)}">
-        <span class="swatch ${c.status}"></span>
-        <span class="grow">${esc(c.name)}
-          <small>${r}/${countAreas(c.id, 1)} regions${total2 ? ` · ${r2}/${total2} provinces` : ''}</small></span>
-        <span class="days">${c.dates.size} ${c.dates.size === 1 ? 'day' : 'days'}</span>
-      </button></li>`;
+      return placeButton(c, `<small>${STATUS_LABEL[c.status]} · ${r}/${countAreas(c.id, 1)} regions${total2 ? ` · ${r2}/${total2} provinces` : ''}</small>`);
     }).join('')
-    : '<li class="hint">No places yet. Import GPS data to fill your map.</li>';
-  $$('#place-list button').forEach((b) => (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id, { fly: true })));
+    : '<li class="hint">No places yet. Import GPS data, or search above to add places by hand.</li>';
+  wirePlaceButtons($('#place-list'));
+  renderStretchList();
+}
+
+function renderPlaceSearch() {
+  const q = $('#place-search').value;
+  const results = searchPlaces(q);
+  $('#place-search-results').innerHTML = results.map((r) => {
+    const p = state.places.get(`${r.level}:${r.id}`);
+    const kind = ['Country', 'Region', 'Province'][r.level];
+    return `<li><button data-level="${r.level}" data-id="${esc(r.id)}">
+      <span class="swatch ${p && shows(p) ? swatchClass(p) : 'not'}" ${p && shows(p) ? '' : 'style="background:var(--line)"'}></span>
+      <span class="grow">${esc(r.name)}<small>${kind}${r.level ? ` · ${esc(r.country)}` : ''}</small></span>
+      <span class="days">${p && shows(p) ? STATUS_LABEL[p.status] : ''}</span></button></li>`;
+  }).join('') || (q.trim().length >= 2 ? '<li class="hint">No match. Try the local name (e.g. "Bayern").</li>' : '');
+  wirePlaceButtons($('#place-search-results'));
 }
 
 const fmtLocalDate = (d) =>
@@ -170,53 +218,116 @@ function fmtStay(s) {
 }
 
 function openPlace(level, id, { fly = false } = {}) {
-  const key = `${level}:${id}`;
-  const p = state.places.get(key);
+  renderPlacePanel(level, id);
+  openSheet('place');
+  mapView.select(level, id); // after openSheet, which clears the old selection
+  const p = state.places.get(`${level}:${id}`);
+  const feature = mapView.featureOf(level, id);
+  // Chosen from a list → show it on the map (tapping the map keeps the view as is).
+  if (fly) mapView.fitTo(p?.bounds ?? (feature && bbox(feature.geometry)));
+  else if (!p?.bounds && feature) mapView.fitTo(bbox(feature.geometry));
+}
+
+function renderPlacePanel(level, id) {
+  const p = state.places.get(`${level}:${id}`);
   const feature = mapView.featureOf(level, id);
   const name = p?.name ?? feature?.properties.name ?? id;
   const a0 = p?.a0 ?? (level === 0 ? id : feature?.properties.a0);
-  const country = level > 0 ? state.places.get(`0:${a0}`)?.name ?? mapView.featureOf(0, a0)?.properties.name : null;
+  const country = level > 0 ? mapView.featureOf(0, a0)?.properties.name : null;
+  const status = p?.status ?? 'not';
+  const filtered = state.range.from || state.range.to;
+
+  // Where the information comes from
+  let source = 'No GPS points on the ground here' + (filtered ? ' in the selected dates.' : '.');
+  if (p?.gps) source = `From GPS · stopped ${fmtDuration(p.stopSec)} in total`;
+  if (p?.manual.length) source = p.gps ? `${source} · also added by hand` : 'Added by hand';
+  if (p?.corrected) source += ' · status set by you';
+
+  const sortedDates = p ? [...p.dates].sort() : [];
+  const st = p ? stays(p.dates) : [];
+  const sub = level < 2 && p ? placesOf(level + 1, a0)
+    .filter((x) => (level === 0 || x.l1 === id) && shows(x))
+    .sort((x, y) => y.dates.size - x.dates.size) : [];
+  const ownManual = (p?.manual ?? []);
 
   $('#place-title').textContent = name;
   const body = $('#place-body');
-  if (!p) {
-    body.innerHTML = `
-      ${country ? `<p class="hint">${esc(country)}</p>` : ''}
-      <p><span class="badge">Not visited</span></p>
-      <p class="hint">No GPS points on the ground here${state.range.from || state.range.to ? ' in the selected dates' : ''}.
-      Adding places by hand comes in a later step.</p>`;
-  } else {
-    const st = stays(p.dates);
-    const sub = level < 2 ? placesOf(level + 1, level === 0 ? id : a0)
-      .filter((x) => level === 0 || x.l1 === id)
-      .filter(counts)
-      .sort((x, y) => y.dates.size - x.dates.size) : [];
-    body.innerHTML = `
-      ${country ? `<p class="hint">${esc(country)}</p>` : ''}
-      <p><span class="badge ${p.status}">Visited</span> <span class="hint">· from GPS</span></p>
-      <div class="facts">
-        <div><small>Days</small><b>${p.dates.size}</b></div>
-        <div><small>Stays</small><b>${st.length}</b></div>
-        <div><small>First visit</small>${fmtLocalDate([...p.dates].sort()[0])}</div>
-        <div><small>Last visit</small>${fmtLocalDate([...p.dates].sort().at(-1))}</div>
+  body.innerHTML = `
+    ${country ? `<p class="hint">${esc(country)}</p>` : ''}
+    <p><span class="badge ${p?.source === 'manual' && status === 'visited' ? 'manual' : status}">${STATUS_LABEL[status]}</span>
+       <span class="hint">· ${esc(source)}</span></p>
+    ${sortedDates.length ? `
+    <div class="facts">
+      <div><small>Days</small><b>${sortedDates.length}</b></div>
+      <div><small>Stays</small><b>${st.length}</b></div>
+      <div><small>First visit</small>${fmtLocalDate(sortedDates[0])}</div>
+      <div><small>Last visit</small>${fmtLocalDate(sortedDates.at(-1))}</div>
+    </div>` : p ? '<p class="hint">No dates known.</p>' : ''}
+    ${p?.bounds ? '<button class="btn primary wide" id="place-zoom">Zoom to my routes here</button>' : ''}
+
+    <h3>Status</h3>
+    <div class="segmented" id="place-status">
+      ${['visited', 'passed', 'not'].map((s) => `<button data-status="${s}" class="${s === status ? 'on' : ''}">${STATUS_LABEL[s]}</button>`).join('')}
+    </div>
+    ${p?.corrected ? '<button class="btn ghost wide" id="place-auto">Back to automatic</button>' : ''}
+
+    <h3>Add a visit by hand</h3>
+    <div class="manual-form">
+      <p class="hint">For trips before you tracked, or when tracking stopped. Dates are optional.</p>
+      <div class="row two">
+        <label>From<input type="date" id="mv-from"></label>
+        <label>To<input type="date" id="mv-to"></label>
       </div>
-      <button class="btn primary wide" id="place-zoom">Zoom to my routes here</button>
-      <h3>Dates</h3>
-      <ul class="stays">${st.slice().reverse().map((s) =>
-        `<li><span>${fmtStay(s)}</span><span>${s.days} ${s.days === 1 ? 'day' : 'days'}</span></li>`).join('')}</ul>
-      ${sub.length ? `<h3>${level === 0 ? 'Regions' : 'Provinces'} visited</h3>
-      <ul class="place-list">${sub.map((x) => `<li><button data-level="${x.level}" data-id="${esc(x.id)}">
-        <span class="swatch ${x.status}"></span><span class="grow">${esc(x.name)}</span>
-        <span class="days">${x.dates.size} ${x.dates.size === 1 ? 'day' : 'days'}</span></button></li>`).join('')}</ul>` : ''}`;
-    $('#place-zoom').onclick = () => { closeSheets(); mapView.fitTo(p.bounds); };
-    body.querySelectorAll('.place-list button').forEach((b) =>
-      (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id, { fly: true })));
-  }
-  openSheet('place');
-  mapView.select(level, id); // after openSheet, which clears the old selection
-  // Chosen from a list → show it on the map (tapping the map keeps the view as is).
-  if (fly) mapView.fitTo(p ? p.bounds : feature && bbox(feature.geometry));
-  else if (!p && feature) mapView.fitTo(bbox(feature.geometry));
+      <textarea id="mv-note" rows="2" placeholder="Note (optional)"></textarea>
+      <button class="btn primary wide" id="mv-add">Add visit</button>
+    </div>
+    ${ownManual.length ? `<ul class="log" id="mv-list">${ownManual.map((m) => {
+      const where = m.level === level && m.placeId === id ? '' : ` · via ${esc(describe(m.level, m.placeId).name)}`;
+      const when = m.from ? (m.to && m.to !== m.from ? `${fmtLocalDate(m.from)} – ${fmtLocalDate(m.to)}` : fmtLocalDate(m.from)) : 'No dates';
+      return `<li><div class="row-actions" style="align-items:center"><span style="flex:1">${when}${where}
+        ${m.note ? `<small>${esc(m.note)}</small>` : ''}</span>
+        <button class="close" data-del-manual="${m.id}" aria-label="Delete this visit">✕</button></div></li>`;
+    }).join('')}</ul>` : ''}
+
+    ${st.length ? `<h3>Dates</h3>
+    <ul class="stays">${st.slice().reverse().map((s) =>
+      `<li><span>${fmtStay(s)}</span><span>${plural(s.days, 'day')}</span></li>`).join('')}</ul>` : ''}
+    ${sub.length ? `<h3>${level === 0 ? 'Regions' : 'Provinces'}</h3>
+    <ul class="place-list">${sub.map((x) => placeButton(x)).join('')}</ul>` : ''}`;
+
+  $('#place-zoom') && ($('#place-zoom').onclick = () => { closeSheets(); mapView.fitTo(p.bounds); });
+  wirePlaceButtons(body);
+
+  body.querySelectorAll('#place-status button').forEach((b) => (b.onclick = async () => {
+    for (const c of state.edits.corrections) {
+      if (c.kind === 'status' && c.level === level && c.placeId === id) await del(STORES.corrections, c.id);
+    }
+    await add(STORES.corrections, { kind: 'status', level, placeId: id, status: b.dataset.status, at: Date.now() });
+    await afterEdit(level, id, `Marked as "${STATUS_LABEL[b.dataset.status]}".`);
+  }));
+  $('#place-auto') && ($('#place-auto').onclick = async () => {
+    await del(STORES.corrections, p.corrected.id);
+    await afterEdit(level, id, 'Back to automatic.');
+  });
+  $('#mv-add').onclick = async () => {
+    let from = $('#mv-from').value || null, to = $('#mv-to').value || null;
+    if (!from && to) [from, to] = [to, null];
+    if (from && to && to < from) [from, to] = [to, from];
+    await add(STORES.manualPlaces, { level, placeId: id, from, to, note: $('#mv-note').value.trim(), at: Date.now() });
+    await afterEdit(level, id, 'Visit added ✓');
+  };
+  body.querySelectorAll('[data-del-manual]').forEach((b) => (b.onclick = async () => {
+    if (!confirm('Delete this visit?')) return;
+    await del(STORES.manualPlaces, Number(b.dataset.delManual));
+    await afterEdit(level, id, 'Visit deleted.');
+  }));
+}
+
+async function afterEdit(level, id, msg) {
+  await refreshPlaces();
+  renderPlacePanel(level, id);
+  mapView.select(level, id);
+  toast(msg);
 }
 
 async function setLevel(level) {
@@ -224,6 +335,153 @@ async function setLevel(level) {
   await setMeta('settings', state.settings);
   mapView.setLevel(level);
   renderLayersSheet();
+}
+
+// ---------- marked stretches (parts of the track that count differently) ----------
+
+const toLocalInput = (t) => {
+  const d = new Date(t * 1000);
+  return `${localDayString(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+const fromLocalInput = (v) => (v ? Math.round(new Date(v).getTime() / 1000) : null);
+const STRETCH_LABEL = { passed: 'Passing through', flight: 'Flight (ignored)' };
+
+function renderStretchList() {
+  const list = state.edits.corrections.filter((c) => c.kind === 'stretch').sort((a, b) => b.fromT - a.fromT);
+  $('#stretch-list').innerHTML = list.map((s) => `<li><div class="row-actions" style="align-items:center">
+      <span style="flex:1"><b>${STRETCH_LABEL[s.as]}</b><small>${fmtDateTime(s.fromT)} – ${fmtDateTime(s.toT)}</small></span>
+      <button class="close" data-del-stretch="${s.id}" aria-label="Delete stretch">✕</button></div></li>`).join('')
+    || '<li class="hint">None yet.</li>';
+  $$('[data-del-stretch]').forEach((b) => (b.onclick = async () => {
+    await del(STORES.corrections, Number(b.dataset.delStretch));
+    await refreshPlaces();
+    renderPlacesSheet();
+    toast('Stretch removed.');
+  }));
+}
+
+function openStretch(draft = {}) {
+  $('#st-from').value = draft.fromT ? toLocalInput(draft.fromT) : '';
+  $('#st-to').value = draft.toT ? toLocalInput(draft.toT) : '';
+  setStretchAs(draft.as ?? 'passed');
+  openSheet('stretch');
+}
+function setStretchAs(as) {
+  state.stretchAs = as;
+  $$('#st-as button').forEach((b) => b.classList.toggle('on', b.dataset.as === as));
+  $('#st-as-hint').textContent = as === 'passed'
+    ? 'Places along this stretch only count as "passed through", even if you were slow (e.g. a traffic jam).'
+    : 'GPS points in this stretch are ignored for places, like any other flight.';
+}
+async function saveStretch() {
+  let fromT = fromLocalInput($('#st-from').value), toT = fromLocalInput($('#st-to').value);
+  if (!fromT || !toT) return toast('Please fill in both start and end.');
+  if (toT < fromT) [fromT, toT] = [toT, fromT];
+  await add(STORES.corrections, { kind: 'stretch', fromT, toT, as: state.stretchAs, at: Date.now() });
+  state.stretchDraft = {};
+  mapView.currentPopup?.remove();
+  await refreshPlaces();
+  openSheet('places');
+  toast('Stretch saved ✓');
+}
+
+function onPointTap(props, coords) {
+  const el = document.createElement('div');
+  const spd = props.spd != null && props.spd !== 'null' ? ` · ${Math.round(props.spd * 3.6)} km/h` : '';
+  el.innerHTML = `<b>${esc(fmtDateTime(Number(props.t)))}</b><div class="hint">GPS point${spd}</div>
+    <div class="row-actions"><button class="btn" data-end="fromT">Start stretch here</button>
+    <button class="btn" data-end="toT">End stretch here</button></div>`;
+  el.querySelectorAll('button').forEach((b) => (b.onclick = () => {
+    state.stretchDraft = { ...state.stretchDraft, [b.dataset.end]: Number(props.t) };
+    const d = state.stretchDraft;
+    if (d.fromT && d.toT) openStretch(d);
+    else toast(d.fromT ? 'Start set. Now tap the dot where it ends.' : 'End set. Now tap the dot where it starts.', 4000);
+    mapView.currentPopup?.remove();
+  }));
+  mapView.popup(coords, el);
+}
+
+// ---------- flights ----------
+
+async function refreshFlights() {
+  state.flights = (await getAll(STORES.flights)).sort((a, b) => b.date.localeCompare(a.date));
+  const { from, to } = state.range;
+  const shown = state.flights.filter((f) => !(from && f.date < from) && !(to && f.date > to));
+  mapView.setFlights(flightsGeoJSON(shown));
+}
+
+function setupAirportPicker(inputSel, listSel) {
+  const input = $(inputSel), list = $(listSel);
+  input.oninput = () => {
+    input._airport = null;
+    input.classList.remove('chosen');
+    const found = searchAirports(input.value);
+    list.innerHTML = found.map((a, i) => `<li><button data-i="${i}"><span class="grow"><b>${esc(a.code)}</b> · ${esc(a.city || a.name)}${a.size === -1 ? ' (closed)' : ''}
+      <small>${esc(a.name)} · ${esc(a.cc)}</small></span></button></li>`).join('');
+    list.querySelectorAll('button').forEach((b) => (b.onclick = () => {
+      input._airport = found[Number(b.dataset.i)];
+      input.value = airportLabel(input._airport);
+      input.classList.add('chosen');
+      list.innerHTML = '';
+    }));
+  };
+}
+
+async function renderFlightsSheet() {
+  await loadAirports();
+  const fl = state.flights;
+  const km = fl.reduce((s, f) => s + flightKm(f), 0);
+  const airportsUsed = new Set(fl.flatMap((f) => [f.from.code, f.to.code]));
+  $('#flight-totals').innerHTML = `
+    <div><b>${fl.length}</b><span>flights</span></div>
+    <div><b>${fmtNum(Math.round(km))}</b><span>km flown</span></div>
+    <div><b>${airportsUsed.size}</b><span>airports</span></div>`;
+  $('#fl-list').innerHTML = fl.map((f) => `<li><div class="row-actions" style="align-items:center;padding:6px 0">
+      <span style="flex:1"><b>${esc(f.from.code)} → ${esc(f.to.code)}</b> · ${fmtLocalDate(f.date)}
+        <small>${esc(f.from.city || f.from.name)} → ${esc(f.to.city || f.to.name)} · ${fmtNum(Math.round(flightKm(f)))} km</small></span>
+      <button class="close" data-del-flight="${f.id}" aria-label="Delete flight">✕</button></div></li>`).join('')
+    || '<li class="hint">No flights yet.</li>';
+  $$('[data-del-flight]').forEach((b) => (b.onclick = async () => {
+    if (!confirm('Delete this flight?')) return;
+    await del(STORES.flights, Number(b.dataset.delFlight));
+    await refreshFlights();
+    renderFlightsSheet();
+  }));
+
+  // Flights spotted in the GPS track, not yet added or dismissed
+  const dismissed = new Set(await getMeta('dismissedFlights', []));
+  const have = new Set(fl.map((f) => `${f.date}|${f.from.code}|${f.to.code}`));
+  const sugg = detectFlights(await getChunks())
+    .filter((s) => !dismissed.has(s.key) && !have.has(`${s.date}|${s.from.code}|${s.to.code}`));
+  $('#fl-suggest-wrap').hidden = !sugg.length;
+  $('#fl-suggest').innerHTML = sugg.map((s, i) => `<li style="padding:8px 0">
+      Looks like a flight from <b>${esc(s.from.city || s.from.name)} (${esc(s.from.code)})</b> to
+      <b>${esc(s.to.city || s.to.name)} (${esc(s.to.code)})</b> on ${fmtLocalDate(s.date)}.
+      <div class="row-actions"><button class="btn primary" data-sugg-add="${i}">Add it</button>
+      <button class="btn" data-sugg-no="${i}">Not a flight</button></div></li>`).join('');
+  $$('[data-sugg-add]').forEach((b) => (b.onclick = async () => {
+    const s = sugg[Number(b.dataset.suggAdd)];
+    await add(STORES.flights, { date: s.date, from: airportSnapshot(s.from), to: airportSnapshot(s.to), source: 'detected', t1: s.t1, t2: s.t2, at: Date.now() });
+    await refreshFlights();
+    renderFlightsSheet();
+    toast('Flight added ✓');
+  }));
+  $$('[data-sugg-no]').forEach((b) => (b.onclick = async () => {
+    await setMeta('dismissedFlights', [...dismissed, sugg[Number(b.dataset.suggNo)].key]);
+    renderFlightsSheet();
+  }));
+}
+
+async function addFlight() {
+  const from = $('#fl-from')._airport, to = $('#fl-to')._airport, date = $('#fl-date').value;
+  if (!from || !to) return toast('Pick both airports from the suggestions.');
+  if (!date) return toast('Please choose the date.');
+  if (from.code === to.code && from.lat === to.lat) return toast('From and To are the same airport.');
+  await add(STORES.flights, { date, from: airportSnapshot(from), to: airportSnapshot(to), source: 'manual', at: Date.now() });
+  for (const sel of ['#fl-from', '#fl-to']) { $(sel).value = ''; $(sel)._airport = null; $(sel).classList.remove('chosen'); }
+  await refreshFlights();
+  renderFlightsSheet();
+  toast(`Flight ${from.code} → ${to.code} added ✓`);
 }
 
 // ---------- reminders banner ----------
@@ -237,7 +495,10 @@ async function checkReminders() {
   const needsBackup = msgs.some((m) => m.kind === 'backup');
   $('#banner-text').textContent = msgs.map((m) => m.text).join(' ') + (needsBackup ? ' Back up now?' : ' Import now?');
   $('#banner-go').textContent = needsBackup ? 'Back up' : 'Import';
-  $('#banner-go').onclick = () => openSheet(needsBackup ? 'backup' : 'import');
+  $('#banner-go').onclick = () => {
+    openSheet('data');
+    if (needsBackup) $('#backup-heading').scrollIntoView({ block: 'start' });
+  };
   $('#banner').hidden = false;
 }
 
@@ -352,6 +613,7 @@ async function handleRestore(file) {
     out.innerHTML = `<div class="result ok">Restored ✓ ${fmtNum(data.pointCount)} GPS points.</div>`;
     await refreshTracks({ fit: true });
     await refreshPlaces();
+    await refreshFlights();
     renderBackupStatus();
     checkReminders();
   } catch (e) {
@@ -378,6 +640,7 @@ async function applyRange(from, to) {
   closeSheets();
   await refreshTracks({ fit: true });
   await refreshPlaces();
+  await refreshFlights();
 }
 
 function presetRange(preset) {
@@ -412,7 +675,10 @@ async function loadSettings() {
 async function renderSettings() {
   const form = $('#settings-form');
   for (const [k, v] of Object.entries(state.settings)) {
-    if (form.elements[k]) form.elements[k].value = v;
+    const el = form.elements[k];
+    if (!el) continue;
+    if (el.type === 'checkbox') el.checked = !!v;
+    else el.value = v;
   }
   try {
     const est = await navigator.storage?.estimate?.();
@@ -429,10 +695,11 @@ async function saveSettings(ev) {
   ev.preventDefault();
   const form = ev.target;
   for (const k of Object.keys(DEFAULT_SETTINGS)) {
-    if (form.elements[k]) {
-      const n = Number(form.elements[k].value);
-      if (Number.isFinite(n) && n > 0) state.settings[k] = n;
-    }
+    const el = form.elements[k];
+    if (!el) continue;
+    if (el.type === 'checkbox') { state.settings[k] = el.checked; continue; }
+    const n = Number(el.value);
+    if (Number.isFinite(n) && n > 0) state.settings[k] = n;
   }
   await setMeta('settings', state.settings);
   toast('Settings saved ✓');
@@ -450,6 +717,7 @@ async function wipeAll() {
   closeSheets();
   await refreshTracks();
   await refreshPlaces();
+  await refreshFlights();
   toast('All data deleted.');
   checkReminders();
 }
@@ -461,6 +729,8 @@ async function init() {
   mapView = new MapView('map', { style: state.settings.mapStyle });
   mapView.setLevel(state.settings.mapLevel);
   mapView.onPlaceTap = (level, id) => openPlace(level, id);
+  mapView.onPointTap = onPointTap;
+  if (location.hostname === 'localhost') window.__scratchmap = { mapView, state }; // testing aid, local only
 
   // Toolbar + sheets
   $$('.toolbar button').forEach((b) => (b.onclick = () => {
@@ -477,6 +747,18 @@ async function init() {
   // Layers
   $('#lyr-scratch').onchange = (e) => mapView.setVisible('scratch', e.target.checked);
   $('#lyr-routes').onchange = (e) => mapView.setVisible('routes', e.target.checked);
+  $('#lyr-flights').onchange = (e) => mapView.setVisible('flights', e.target.checked);
+
+  // Places: search, stretches
+  $('#place-search').oninput = renderPlaceSearch;
+  $('#stretch-new').onclick = () => openStretch(state.stretchDraft);
+  $$('#st-as button').forEach((b) => (b.onclick = () => setStretchAs(b.dataset.as)));
+  $('#st-save').onclick = saveStretch;
+
+  // Flights
+  setupAirportPicker('#fl-from', '#fl-from-list');
+  setupAirportPicker('#fl-to', '#fl-to-list');
+  $('#fl-add').onclick = addFlight;
   $$('#level-seg button').forEach((b) => (b.onclick = () => setLevel(Number(b.dataset.level))));
   $('#lyr-points').onchange = (e) => mapView.setVisible('points', e.target.checked);
   $$('#style-seg button').forEach((b) => (b.onclick = async () => {
@@ -512,7 +794,7 @@ async function init() {
   await refreshTracks({ fit: true });
   checkReminders();
   mapView.setBoundaries(await loadBoundaries());
-  await refreshPlaces();
+  await Promise.all([refreshPlaces(), refreshFlights()]);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker failed', e));

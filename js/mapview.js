@@ -1,7 +1,8 @@
 // mapview.js — the map itself (MapLibre GL) and the layers we draw on top.
 //
 // Base maps come from OpenFreeMap: free, OpenStreetMap-based, no API key.
-// On top, from bottom to top: scratch-map colours → route lines → GPS dots.
+// On top, from bottom to top: scratch-map colours → hand-added stripes →
+// flight arcs → route lines → GPS dots.
 
 import * as maplibregl from '../vendor/maplibre/maplibre-gl.mjs';
 
@@ -15,6 +16,7 @@ export const SCRATCH_COLORS = {
   visited: '#e0a526',
   passed: '#f2d68c',
   outline: '#a8761a',
+  flight: '#3b5bdb',
 };
 
 const EMPTY = { type: 'FeatureCollection', features: [] };
@@ -22,12 +24,13 @@ const LEVEL_SOURCES = ['countries', 'admin1', 'admin2'];
 
 export class MapView {
   constructor(container, { style = 'normal' } = {}) {
-    this.data = { lines: EMPTY, points: EMPTY };
+    this.data = { lines: EMPTY, points: EMPTY, flights: EMPTY };
+    this.manualShapes = [EMPTY, EMPTY, EMPTY]; // per level: areas you added by hand (striped)
     this.boundaries = null;     // { countries, admin1, admin2 } GeoJSON
     this.placeStates = new Map(); // "level:id" → { status }
     this.level = 0;
     this.selected = null;       // "level:id"
-    this.visible = { routes: true, points: true, scratch: true };
+    this.visible = { routes: true, points: true, scratch: true, flights: true };
     this.map = new maplibregl.Map({
       container,
       style: MAP_STYLES[style]?.url ?? MAP_STYLES.normal.url,
@@ -45,7 +48,11 @@ export class MapView {
     this.map.on('style.load', () => { this.styleReady = true; this.#addLayers(); });
 
     // Tapping the map → which area of the current level is here?
+    // Tapping a GPS dot (when zoomed in) beats tapping the area under it.
     this.map.on('click', (e) => {
+      const box = [[e.point.x - 8, e.point.y - 8], [e.point.x + 8, e.point.y + 8]];
+      const dot = this.map.getLayer('points') && this.map.queryRenderedFeatures(box, { layers: ['points'] })[0];
+      if (dot && this.onPointTap) return this.onPointTap(dot.properties, dot.geometry.coordinates);
       if (!this.onPlaceTap || !this.visible.scratch) return;
       const f = this.map.queryRenderedFeatures(e.point, { layers: [`fill-${this.level}`] })[0];
       if (f) this.onPlaceTap(this.level, f.properties.id);
@@ -62,7 +69,20 @@ export class MapView {
     // Put the scratch colours underneath the map's place names, so labels stay readable.
     const firstLabel = m.getStyle().layers.find((l) => l.type === 'symbol')?.id;
 
+    if (!m.hasImage('hatch')) m.addImage('hatch', hatchPattern(), { pixelRatio: 2 });
     if (this.boundaries) this.#addScratchLayers(firstLabel);
+
+    m.addSource('flights', { type: 'geojson', data: this.data.flights });
+    m.addLayer({
+      id: 'flights', type: 'line', source: 'flights',
+      layout: { 'line-cap': 'round' },
+      paint: {
+        'line-color': SCRATCH_COLORS.flight,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 2, 1.5, 10, 3],
+        'line-dasharray': [2, 2],
+        'line-opacity': 0.85,
+      },
+    });
 
     m.addSource('routes', { type: 'geojson', data: this.data.lines, tolerance: 0.6 });
     m.addSource('points', { type: 'geojson', data: this.data.points, maxzoom: 16 });
@@ -109,10 +129,10 @@ export class MapView {
             'visited', SCRATCH_COLORS.visited,
             'passed', SCRATCH_COLORS.passed,
             '#000000'],
-          'fill-opacity': ['match', ['feature-state', 'status'],
-            'visited', 0.55,
-            'passed', 0.45,
-            0], // not visited: invisible but still tappable
+          'fill-opacity': ['case',
+            ['boolean', ['feature-state', 'manualOnly'], false], 0.25, // stripes on top show it's by hand
+            ['match', ['feature-state', 'status'], 'visited', 0.6, 'passed', 0.3, 0]],
+          // not visited: invisible but still tappable
         },
       }, beforeId);
       m.addLayer({
@@ -124,6 +144,11 @@ export class MapView {
           'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1,
             ['match', ['feature-state', 'status'], 'visited', 0.9, 'passed', 0.7, 0.35]],
         },
+      }, beforeId);
+      m.addSource(`manual-${level}`, { type: 'geojson', data: this.manualShapes[level] });
+      m.addLayer({
+        id: `hatch-${level}`, type: 'fill', source: `manual-${level}`,
+        paint: { 'fill-pattern': 'hatch', 'fill-opacity': 0.9 },
       }, beforeId);
     });
     this.#applyPlaceStates();
@@ -140,9 +165,17 @@ export class MapView {
     }
   }
 
-  /** places: Map "level:id" → place (with .status) */
+  /** places: Map "level:id" → place (with .status and .source) */
   setPlaceStates(places) {
     this.placeStates = places;
+    // Areas known only from your manual entries get diagonal stripes.
+    this.manualShapes = [0, 1, 2].map((level) => ({
+      type: 'FeatureCollection',
+      features: [...places.values()]
+        .filter((p) => p.level === level && p.source === 'manual' && p.status === 'visited')
+        .map((p) => this.featureOf(level, p.id))
+        .filter(Boolean),
+    }));
     this.#applyPlaceStates();
   }
 
@@ -151,8 +184,10 @@ export class MapView {
     if (!m.getSource('countries')) return;
     LEVEL_SOURCES.forEach((src) => m.removeFeatureState({ source: src }));
     for (const p of this.placeStates.values()) {
-      m.setFeatureState({ source: LEVEL_SOURCES[p.level], id: p.id }, { status: p.status });
+      m.setFeatureState({ source: LEVEL_SOURCES[p.level], id: p.id },
+        { status: p.status, manualOnly: p.source === 'manual' && p.status === 'visited' });
     }
+    this.manualShapes.forEach((fc, level) => m.getSource(`manual-${level}`)?.setData(fc));
     if (this.selected) {
       const [lvl, id] = this.#splitKey(this.selected);
       m.setFeatureState({ source: LEVEL_SOURCES[lvl], id }, { selected: true });
@@ -181,8 +216,13 @@ export class MapView {
     this.#applyVisibility();
   }
 
+  setFlights(fc) {
+    this.data.flights = fc;
+    this.map.getSource('flights')?.setData(fc);
+  }
+
   setTrackData({ lines, points }) {
-    this.data = { lines, points };
+    this.data = { ...this.data, lines, points };
     this.map.getSource('routes')?.setData(lines);
     this.map.getSource('points')?.setData(points);
   }
@@ -198,9 +238,11 @@ export class MapView {
     set('routes', this.visible.routes);
     set('routes-casing', this.visible.routes);
     set('points', this.visible.points);
+    set('flights', this.visible.flights);
     for (let l = 0; l < LEVEL_SOURCES.length; l++) {
       set(`fill-${l}`, this.visible.scratch && l === this.level);
       set(`line-${l}`, this.visible.scratch && l === this.level);
+      set(`hatch-${l}`, this.visible.scratch && l === this.level);
     }
   }
 
@@ -218,4 +260,29 @@ export class MapView {
   featureOf(level, id) {
     return this.boundaries?.[LEVEL_SOURCES[level]].features.find((x) => x.properties.id === id);
   }
+
+  /** A small bubble on the map (used for GPS dots). Returns the popup. */
+  popup(lngLat, element) {
+    this.currentPopup?.remove();
+    this.currentPopup = new maplibregl.Popup({ closeButton: true, maxWidth: '260px' })
+      .setLngLat(lngLat).setDOMContent(element).addTo(this.map);
+    return this.currentPopup;
+  }
+}
+
+/** Gold diagonal stripes, drawn once into a tiny image the map repeats. */
+function hatchPattern() {
+  const size = 16;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  g.strokeStyle = SCRATCH_COLORS.visited;
+  g.lineWidth = 3;
+  for (const o of [-size, 0, size]) {
+    g.beginPath();
+    g.moveTo(o, size);
+    g.lineTo(o + size, 0);
+    g.stroke();
+  }
+  return g.getImageData(0, 0, size, size);
 }

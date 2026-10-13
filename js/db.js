@@ -190,3 +190,10 @@ export async function putMany(storeName, records) {
   for (const r of records) s.put(r);
   return done(tx);
 }
+
+export async function del(storeName, key) {
+  const db = await openDB();
+  const tx = db.transaction(storeName, 'readwrite');
+  tx.objectStore(storeName).delete(key);
+  return done(tx);
+}

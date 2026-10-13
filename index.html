@@ -35,10 +35,10 @@
   <nav class="toolbar" aria-label="Main">
     <img class="rail-logo" src="icons/icon-192.png" alt="Scratch Map">
     <button data-sheet="places"><span class="ico">◉</span>Places</button>
+    <button data-sheet="flights"><span class="ico">✈</span>Flights</button>
     <button data-sheet="layers"><span class="ico">◧</span>Layers</button>
     <button data-sheet="dates"><span class="ico">▦</span>Dates</button>
-    <button data-sheet="import"><span class="ico">⤓</span>Import</button>
-    <button data-sheet="backup"><span class="ico">⛨</span>Backup</button>
+    <button data-sheet="data"><span class="ico">⇅</span>Data</button>
     <button data-sheet="settings"><span class="ico">⚙</span>Settings</button>
   </nav>
 
@@ -50,7 +50,7 @@
     <label class="row toggle"><span>Scratch map <small>(gold = visited)</small></span><input type="checkbox" id="lyr-scratch" checked></label>
     <label class="row toggle"><span>Routes (lines)</span><input type="checkbox" id="lyr-routes" checked></label>
     <label class="row toggle"><span>GPS points <small>(shown when zoomed in)</small></span><input type="checkbox" id="lyr-points" checked></label>
-    <label class="row toggle disabled"><span>Flights <small>(coming soon)</small></span><input type="checkbox" disabled></label>
+    <label class="row toggle"><span>Flights <small>(dashed blue arcs)</small></span><input type="checkbox" id="lyr-flights" checked></label>
     <h3>Map style</h3>
     <div class="segmented" id="style-seg">
       <button data-style="normal">Normal</button>
@@ -66,8 +66,55 @@
   <section class="sheet" id="sheet-places" hidden>
     <header><h2>Places</h2><button class="close" aria-label="Close">✕</button></header>
     <div class="totals" id="totals"></div>
-    <p class="hint">Counted from GPS on the ground; flights never count. Tap a country for details.</p>
+    <div class="search">
+      <input type="search" id="place-search" placeholder="Find a country or region… (to add or check it)" autocomplete="off">
+      <ul class="place-list" id="place-search-results"></ul>
+    </div>
+    <p class="hint" id="places-hint"></p>
     <ul class="place-list" id="place-list"></ul>
+    <h3>Marked stretches</h3>
+    <p class="hint">Part of your track that shouldn't count normally, like a train ride without stopping, or a flight the GPS logged.</p>
+    <ul class="log" id="stretch-list"></ul>
+    <button class="btn wide" id="stretch-new">Mark a stretch of route…</button>
+  </section>
+
+  <section class="sheet" id="sheet-stretch" hidden>
+    <header><h2>Mark a stretch</h2><button class="close" aria-label="Close">✕</button></header>
+    <p class="hint">Tip: zoom in on your route and tap a GPS dot to fill in the start or end.</p>
+    <div class="row two">
+      <label>Start<input type="datetime-local" id="st-from" step="60"></label>
+      <label>End<input type="datetime-local" id="st-to" step="60"></label>
+    </div>
+    <h3>Treat it as</h3>
+    <div class="segmented" id="st-as">
+      <button data-as="passed" class="on">Passing through</button>
+      <button data-as="flight">Flight (ignore)</button>
+    </div>
+    <p class="hint" id="st-as-hint"></p>
+    <button class="btn primary wide" id="st-save">Save stretch</button>
+  </section>
+
+  <section class="sheet" id="sheet-flights" hidden>
+    <header><h2>Flights</h2><button class="close" aria-label="Close">✕</button></header>
+    <div class="totals" id="flight-totals"></div>
+    <h3>Add a flight</h3>
+    <div class="airport-field">
+      <label>From<input type="search" id="fl-from" placeholder="City or code, e.g. Madrid or MAD" autocomplete="off"></label>
+      <ul class="place-list suggest" id="fl-from-list"></ul>
+    </div>
+    <div class="airport-field">
+      <label>To<input type="search" id="fl-to" placeholder="City or code, e.g. Berlin or BER" autocomplete="off"></label>
+      <ul class="place-list suggest" id="fl-to-list"></ul>
+    </div>
+    <div class="row two"><label>Date<input type="date" id="fl-date"></label></div>
+    <button class="btn primary wide" id="fl-add">Add flight</button>
+    <div id="fl-suggest-wrap" hidden>
+      <h3>Spotted in your GPS</h3>
+      <ul class="place-list" id="fl-suggest"></ul>
+    </div>
+    <h3>Your flights</h3>
+    <p class="hint">Flights are drawn as dashed arcs. Countries you fly over never count as visited.</p>
+    <ul class="place-list" id="fl-list"></ul>
   </section>
 
   <section class="sheet" id="sheet-place" hidden>
@@ -91,18 +138,16 @@
     <p class="hint" id="date-summary"></p>
   </section>
 
-  <section class="sheet" id="sheet-import" hidden>
-    <header><h2>Import GPS data</h2><button class="close" aria-label="Close">✕</button></header>
+  <section class="sheet" id="sheet-data" hidden>
+    <header><h2>Import &amp; backup</h2><button class="close" aria-label="Close">✕</button></header>
+    <h3>Import GPS data</h3>
     <p>In <b>Scoria</b>, use <b>Export database</b>, save the <code>.sqlite</code> file to Files, then pick it here. Old points are recognised and skipped, so importing the same history twice is safe.</p>
     <label class="btn primary wide file-btn">Choose Scoria file…<input type="file" id="import-file" multiple hidden></label>
     <div id="import-progress" class="hint" hidden></div>
     <div id="import-result"></div>
-    <h3>Import history</h3>
-    <ul id="import-log" class="log"></ul>
-  </section>
+    <details><summary class="hint">Import history</summary><ul id="import-log" class="log"></ul></details>
 
-  <section class="sheet" id="sheet-backup" hidden>
-    <header><h2>Backup</h2><button class="close" aria-label="Close">✕</button></header>
+    <h3 id="backup-heading">Backup</h3>
     <p class="hint" id="backup-status"></p>
     <ol class="steps">
       <li>Tap <b>Prepare backup</b>. It packs everything into one file.</li>
@@ -130,6 +175,9 @@
       <label class="row field"><span>…if you moved more than<small>km during the gap</small></span><input type="number" name="gapKm" min="0" max="1000" step="0.5"></label>
       <label class="row field"><span>Faster than this can't be by ground<small>km/h — line is broken</small></span><input type="number" name="maxGroundKmh" min="100" max="2000" step="10"></label>
       <label class="row field"><span>Remind me to import/back up after<small>days</small></span><input type="number" name="reminderDays" min="1" max="365"></label>
+      <h3>Visited or passed through?</h3>
+      <label class="row field"><span>A place counts as visited after stopping there for<small>minutes in total (less = "passed through")</small></span><input type="number" name="dwellMinutes" min="1" max="2880"></label>
+      <label class="row toggle"><span>Count "passed through" places in totals</span><input type="checkbox" name="countPassed"></label>
       <button class="btn primary wide" type="submit">Save settings</button>
     </form>
     <p class="hint" id="storage-info"></p>
