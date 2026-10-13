@@ -56,6 +56,8 @@ function openSheet(name) {
   closeSheets();
   $(`#sheet-${name}`).hidden = false;
   $('#scrim').hidden = false;
+  document.body.classList.add('panel-open'); // laptop: map makes room for the sidebar
+  mapView?.map.resize();
   $(`.toolbar [data-sheet="${name}"]`)?.classList.add('active');
   onSheetOpen[name]?.();
 }
@@ -64,6 +66,8 @@ function closeSheets() {
   $$('.sheet').forEach((s) => (s.hidden = true));
   $('#scrim').hidden = true;
   $$('.toolbar button').forEach((b) => b.classList.remove('active'));
+  document.body.classList.remove('panel-open');
+  mapView?.map.resize();
 }
 const onSheetOpen = {
   places: renderPlacesSheet,
@@ -151,7 +155,7 @@ function renderPlacesSheet() {
       </button></li>`;
     }).join('')
     : '<li class="hint">No places yet. Import GPS data to fill your map.</li>';
-  $$('#place-list button').forEach((b) => (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id)));
+  $$('#place-list button').forEach((b) => (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id, { fly: true })));
 }
 
 const fmtLocalDate = (d) =>
@@ -165,7 +169,7 @@ function fmtStay(s) {
     : `${a.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} – ${fmtLocalDate(s.to)}`;
 }
 
-function openPlace(level, id) {
+function openPlace(level, id, { fly = false } = {}) {
   const key = `${level}:${id}`;
   const p = state.places.get(key);
   const feature = mapView.featureOf(level, id);
@@ -206,11 +210,13 @@ function openPlace(level, id) {
         <span class="days">${x.dates.size} ${x.dates.size === 1 ? 'day' : 'days'}</span></button></li>`).join('')}</ul>` : ''}`;
     $('#place-zoom').onclick = () => { closeSheets(); mapView.fitTo(p.bounds); };
     body.querySelectorAll('.place-list button').forEach((b) =>
-      (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id)));
+      (b.onclick = () => openPlace(Number(b.dataset.level), b.dataset.id, { fly: true })));
   }
   openSheet('place');
   mapView.select(level, id); // after openSheet, which clears the old selection
-  if (!p && feature) mapView.fitTo(bbox(feature.geometry));
+  // Chosen from a list → show it on the map (tapping the map keeps the view as is).
+  if (fly) mapView.fitTo(p ? p.bounds : feature && bbox(feature.geometry));
+  else if (!p && feature) mapView.fitTo(bbox(feature.geometry));
 }
 
 async function setLevel(level) {
@@ -463,6 +469,7 @@ async function init() {
   }));
   $$('.sheet .close').forEach((b) => (b.onclick = closeSheets));
   $('#scrim').onclick = closeSheets;
+  document.addEventListener('keydown', (e) => e.key === 'Escape' && closeSheets());
 
   // Banner
   $('#banner-close').onclick = () => { sessionStorage.setItem('bannerDismissed', '1'); $('#banner').hidden = true; };

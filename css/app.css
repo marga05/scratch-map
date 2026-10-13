@@ -86,7 +86,8 @@ html, body {
   padding: 8px calc(var(--safe-right) + 18px) calc(var(--safe-bottom) + 24px) calc(var(--safe-left) + 18px);
   animation: up 0.18s ease-out;
 }
-@media (min-width: 700px) {
+/* Tablet: panels float in the corner */
+@media (min-width: 700px) and (max-width: 899px) {
   .sheet { left: auto; right: 16px; bottom: calc(var(--toolbar-h) + 16px); width: 420px; border-radius: 20px; max-height: 75vh; }
 }
 @keyframes up { from { transform: translateY(30px); opacity: 0; } }
@@ -179,3 +180,38 @@ code { font-size: 0.9em; background: var(--line); padding: 1px 5px; border-radiu
 .stays { list-style: none; padding: 0; margin: 0; font-size: 14px; }
 .stays li { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); }
 .stays li span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---------- Laptop / desktop layout ----------
+   Toolbar becomes a menu rail on the left; panels open as a sidebar next to
+   the map (the map shrinks instead of being covered). */
+.rail-logo { display: none; }
+@media (min-width: 900px) {
+  :root { --rail: 84px; --panel: 400px; }
+  .toolbar {
+    top: 0; bottom: 0; left: 0; right: auto; width: var(--rail);
+    flex-direction: column; justify-content: flex-start; gap: 4px;
+    padding: 14px 8px; border-top: 0; border-right: 1px solid var(--line);
+  }
+  .toolbar button { flex: none; min-height: 64px; font-size: 12px; cursor: pointer; }
+  .toolbar button:hover { background: var(--line); }
+  .toolbar button.active { background: var(--line); }
+  .rail-logo { display: block; width: 44px; height: 44px; border-radius: 12px; margin: 0 auto 12px; }
+
+  #map { left: var(--rail); }
+  body.panel-open #map { left: calc(var(--rail) + var(--panel)); }
+
+  .sheet {
+    top: 0; bottom: 0; left: var(--rail); right: auto; width: var(--panel);
+    max-height: none; border-radius: 0; box-shadow: none; border-right: 1px solid var(--line);
+    padding: 10px 22px 28px; animation: none;
+  }
+  .sheet header { top: -10px; }
+  .scrim { display: none !important; }
+
+  .status-chip, .banner { left: calc(var(--rail) + 14px); }
+  body.panel-open .status-chip, body.panel-open .banner { left: calc(var(--rail) + var(--panel) + 14px); }
+  .banner { right: auto; width: min(560px, calc(100vw - var(--rail) - var(--panel) - 90px)); }
+  .maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right { bottom: 0; }
+  .toast { bottom: 24px; }
+  .btn:hover { filter: brightness(0.96); }
+}
