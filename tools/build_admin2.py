@@ -17,6 +17,7 @@ import tempfile
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "adm2"
@@ -28,13 +29,33 @@ MAX_UNITS = 6000                # beyond this a file gets too heavy for a phone
 MAX_BYTES = 1_400_000           # aim for files of at most ~1.4 MB
 
 
+# Only ever download from geoBoundaries and the GitHub hosts it stores its files on.
+ALLOWED_HOSTS = {
+    "www.geoboundaries.org", "geoboundaries.org", "github.com",
+    "raw.githubusercontent.com", "media.githubusercontent.com", "objects.githubusercontent.com",
+}
+
+
+def _check(url):
+    u = urlsplit(url)
+    if u.scheme != "https" or u.hostname not in ALLOWED_HOSTS:
+        raise ValueError(f"refusing to fetch {url!r}")
+    return url
+
+
+def _open(url, timeout):
+    r = urllib.request.urlopen(_check(url), timeout=timeout)
+    _check(r.geturl())  # where any redirect ended up must be allowed too
+    return r
+
+
 def fetch_json(url):
-    with urllib.request.urlopen(url, timeout=60) as r:
+    with _open(url, 60) as r:
         return json.load(r)
 
 
 def fetch_bytes(url):
-    with urllib.request.urlopen(url, timeout=180) as r:
+    with _open(url, 180) as r:
         return r.read()
 
 

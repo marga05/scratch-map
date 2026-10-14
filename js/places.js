@@ -116,10 +116,12 @@ export async function loadBoundaries() {
  */
 export async function ensureLevel2(countryIds) {
   const b = await loadBoundaries();
-  const todo = countryIds.filter((id) => b.adm2Index[id] && !b.level2Countries.has(id));
+  // Only plain 3-letter codes that are really in the index (never anything else in a file path).
+  const todo = countryIds.filter((id) => /^[A-Z0-9]{3}$/.test(id)
+    && Object.prototype.hasOwnProperty.call(b.adm2Index, id) && !b.level2Countries.has(id));
   if (!todo.length) return false;
   const loaded = await Promise.all(todo.map((id) =>
-    fetch(`data/adm2/${id}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
+    fetch(`data/adm2/${encodeURIComponent(id)}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
   let any = false;
   loaded.forEach((fc, i) => {
     if (!fc) return; // offline and never downloaded: try again next time
